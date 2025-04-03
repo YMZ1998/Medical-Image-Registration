@@ -1,9 +1,16 @@
+import os
+import shutil
+
 import torch
 import torch.nn.functional as F
 from monai.data.utils import list_data_collate
 from monai.losses import BendingEnergyLoss, DiceLoss
 from torch.nn import MSELoss
 
+def remove_and_create_dir(path):
+    if os.path.exists(path):
+        shutil.rmtree(path)
+    os.makedirs(path, exist_ok=True)
 
 def forward(fixed_image, moving_image, moving_label, fixed_keypoints, model, warp_layer):
     """
@@ -38,6 +45,8 @@ def forward(fixed_image, moving_image, moving_label, fixed_keypoints, model, war
         ddf_keypoints = None
 
     return ddf_image, ddf_keypoints, pred_image, pred_label
+
+
 def collate_fn(batch):
     """
     Custom collate function.
@@ -89,29 +98,25 @@ def loss_fun(
     fixed_keypoints,
     pred_keypoints,
     ddf_image,
-    lam_t,
-    lam_l,
-    lam_m,
-    lam_r,
+    lam_t=1.0,
+    lam_l=0.0,
+    lam_m=0.0,
+    lam_r=0.0,
 ):
     """
-    Custom multi-target loss:
-        - TRE as main loss component
-        - Parametrizable weights for further (optional) components: MSE/BendingEnergy/Dice loss
-    Note: Might require "calibration" of lambda weights for the multi-target components,
-        e.g. by making a first trial run, and manually setting weights to account for different magnitudes
+    Multi-target loss function:
+        - TRE (Target Registration Error) as main loss
+        - Optionally includes MSE, Dice loss, and Bending Energy regularization
     """
-    # Instantiate where necessary
-    if lam_m > 0:
-        mse_loss = MSELoss()
-    if lam_r > 0:
-        regularization = BendingEnergyLoss()
+    loss_terms = []
+
+    if lam_t > 0:
+        loss_terms.append(lam_t * tre(fixed_keypoints, pred_keypoints))
     if lam_l > 0:
-        label_loss = DiceLoss()
-    # Compute loss components
-    t = tre(fixed_keypoints, pred_keypoints) if lam_t > 0 else 0.0
-    p = label_loss(pred_label, fixed_label) if lam_l > 0 else 0.0
-    m = mse_loss(fixed_image, pred_image) if lam_m > 0 else 0.0
-    r = regularization(ddf_image) if lam_r > 0 else 0.0
-    # Weighted combination:
-    return lam_t * t + lam_l * p + lam_m * m + lam_r * r
+        loss_terms.append(lam_l * DiceLoss()(pred_label, fixed_label))
+    if lam_m > 0:
+        loss_terms.append(lam_m * MSELoss()(fixed_image, pred_image))
+    if lam_r > 0:
+        loss_terms.append(lam_r * BendingEnergyLoss()(ddf_image))
+
+    return sum(loss_terms) if loss_terms else 0.0
