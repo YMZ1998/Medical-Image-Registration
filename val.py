@@ -3,59 +3,18 @@ import os
 import warnings
 from pprint import pprint
 
-import matplotlib.pyplot as plt
 import torch
 from monai.data import Dataset, DataLoader
 from monai.networks.blocks import Warp
 from monai.utils import set_determinism, first
 
 from parse_args import get_device, parse_args, get_net
-from utils.dataset import get_files, overlay_img
+from utils.dataset import get_files
 from utils.transforms import get_val_transforms
 from utils.utils import forward
-
-
-def visualize_registration(check_data, pred_image, pred_label, ddf_keypoints, target_res):
-    # Permute to get correct axis for visualization
-    def prep_slice(vol): return vol[0][0].permute(1, 0, 2).cpu()
-
-    fixed_image = prep_slice(check_data["fixed_image"])
-    fixed_label = prep_slice(check_data["fixed_label"])
-    moving_image = prep_slice(check_data["moving_image"])
-    moving_label = prep_slice(check_data["moving_label"])
-    pred_image = pred_image[0][0].permute(1, 0, 2).cpu()
-    pred_label = pred_label[0][0].permute(1, 0, 2).cpu()
-
-    slice_idx = int(target_res[0] * 95.0 / 224)  # Slice equivalent to 95 in 224-depth
-
-    fig, axs = plt.subplots(2, 2)
-    overlay_img(fixed_image, moving_image, slice_idx, axs[0, 0], "Before registration")
-    overlay_img(fixed_image, pred_image, slice_idx, axs[0, 1], "After registration")
-    overlay_img(fixed_label, moving_label, slice_idx, axs[1, 0])
-    overlay_img(fixed_label, pred_label, slice_idx, axs[1, 1])
-    for ax in axs.ravel():
-        ax.set_axis_off()
-    plt.suptitle("Image and label visualizations pre-/post-registration")
-    plt.tight_layout()
-    plt.show()
-
-    # Keypoint visualization
-    fixed_kp = check_data["fixed_keypoints"][0].cpu()
-    moving_kp = check_data["moving_keypoints"][0].cpu()
-    moved_kp = fixed_kp + ddf_keypoints[0].cpu()
-
-    fig = plt.figure()
-    for i, title, fkp in zip(
-        [1, 2], ["Before registration", "After registration"], [fixed_kp, moved_kp]
-    ):
-        ax = fig.add_subplot(1, 2, i, projection="3d")
-        ax.scatter(fkp[:, 0], fkp[:, 1], fkp[:, 2], s=2.0, color="lightblue")
-        ax.scatter(moving_kp[:, 0], moving_kp[:, 1], moving_kp[:, 2], s=2.0, color="orange")
-        ax.set_title(title)
-        ax.view_init(-10, 80)
-        ax.set_aspect("auto")
-
-    plt.show()
+from utils.visualization import visualize_registration
+import SimpleITK as sitk
+import numpy as np
 
 
 def val():
@@ -105,6 +64,31 @@ def val():
                 model,
                 warp_layer,
             )
+
+    save_dir = os.path.join("results", args.arch)
+    os.makedirs(save_dir, exist_ok=True)
+
+    pred_image_array = pred_image[0].cpu().numpy()
+    pred_label_array = pred_label[0].cpu().numpy()
+
+    pred_image_array = pred_image_array[0].transpose(2, 1, 0)
+    pred_label_array = pred_label_array[0].transpose(2, 1, 0)
+    pred_label_array = np.where(pred_label_array > 0, 1, 0)
+
+    pred_image_itk = sitk.GetImageFromArray(pred_image_array)
+    pred_label_itk = sitk.GetImageFromArray(pred_label_array)
+
+    pred_image_itk=sitk.Cast(pred_image_itk, sitk.sitkFloat32)
+    pred_label_itk=sitk.Cast(pred_label_itk, sitk.sitkUInt8)
+
+    sitk.WriteImage(pred_image_itk, os.path.join(save_dir, "pred_image.nii.gz"))
+    sitk.WriteImage(pred_label_itk, os.path.join(save_dir, "pred_label.nii.gz"))
+
+    torch.save(ddf_image[0].cpu(), os.path.join(save_dir, "ddf_image.pt"))
+    torch.save(ddf_keypoints[0].cpu(), os.path.join(save_dir, "ddf_keypoints.pt"))
+    torch.save(check_data["fixed_image"][0].cpu(), os.path.join(save_dir, "fixed_image.pt"))
+    torch.save(check_data["moving_image"][0].cpu(), os.path.join(save_dir, "moving_image.pt"))
+    torch.save(check_data["moving_label"][0].cpu(), os.path.join(save_dir, "moving_label.pt"))
 
     # Visualization
     visualize_registration(check_data, pred_image, pred_label, ddf_keypoints, target_res)
