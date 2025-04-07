@@ -2,10 +2,10 @@ import matplotlib.pyplot as plt
 
 
 def overlay_img(img1, img2, slice_idx, ax, title=None):
-    ax.imshow(1 - img1[:, slice_idx, :].T, cmap="Blues", origin="lower")
-    ax.imshow(1 - img2[:, slice_idx, :].T, cmap="Oranges", origin="lower", alpha=0.5)
+    ax.imshow(1 - img1[:, slice_idx, :].T.cpu().numpy(), cmap="Greys", origin="lower")
+    ax.imshow(1 - img2[:, slice_idx, :].T.cpu().numpy(), cmap="Greys", origin="lower", alpha=0.5)
     if title is not None:
-        ax.title.set_text(title)
+        ax.set_title(title)
 
 
 def visualize_registration(check_data, pred_image, pred_label, ddf_keypoints, target_res):

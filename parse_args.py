@@ -15,9 +15,8 @@ def get_net(args):
     print('★' * 30)
     print(f'model:{args.arch}\n'
           f'epoch:{args.epochs}\n'
-          f'image size:{args.image_size}\n')
+          f'image size:{args.image_size}')
     print('★' * 30)
-    device = get_device()
 
     if args.arch == "dynunet":
         net = DynUNet(
@@ -71,7 +70,7 @@ def get_net(args):
     else:
         raise ValueError(f"model_name {args.model_name} not supported")
 
-    return net.to(device)
+    return net.to(args.device)
 
 
 def parse_args():
@@ -88,6 +87,7 @@ def parse_args():
     parser.add_argument("--num_classes", default=3, type=int)
     parser.add_argument("--batch_size", default=4, type=int)
     parser.add_argument("--epochs", default=200, type=int, metavar="N", help="number of total epochs to train")
+    # parser.add_argument("--device", default="cuda", type=str)
 
     # Mixed precision training parameters
     parser.add_argument("--amp", default=True, type=bool, help="Use torch.cuda.amp for mixed precision training")
@@ -96,6 +96,8 @@ def parse_args():
 
     args.model_dir = os.path.join(os.getcwd(), "models", "nlst", args.arch)
     os.makedirs(args.model_dir, exist_ok=True)
+
+    args.device = get_device()
 
     print(args)
 

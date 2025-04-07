@@ -10,7 +10,7 @@ from monai.networks.blocks import Warp
 from monai.utils import set_determinism, first
 from torch.utils.tensorboard import SummaryWriter
 
-from parse_args import get_device, parse_args, get_net
+from parse_args import parse_args, get_net
 from utils.dataset import get_files
 from utils.train_and_eval import train_one_epoch, evaluate_model, save_best_model, save_latest_model
 from utils.transforms import get_train_transforms, get_val_transforms
@@ -24,7 +24,7 @@ if __name__ == "__main__":
     warnings.filterwarnings("ignore")
 
     args = parse_args()
-    device = get_device()
+    device = args.device
     train_files, val_files = get_files(os.path.join(args.data_path, "NLST"))
     pprint(train_files[:2])
 

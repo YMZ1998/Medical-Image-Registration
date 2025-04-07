@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import torch
 from monai.metrics import DiceMetric
@@ -36,7 +37,7 @@ def train_one_epoch(model, train_loader, optimizer, lr_scheduler, loss_fun, warp
     model.train()
 
     epoch_loss, n_steps, tre_before, tre_after = 0, 0, 0, 0
-    for batch_data in tqdm(train_loader, desc="Training Epoch"):
+    for batch_data in tqdm(train_loader, desc="Training Epoch", file=sys.stdout):
         fixed_image = batch_data["fixed_image"].to(device)
         moving_image = batch_data["moving_image"].to(device)
         moving_label = batch_data["moving_label"].to(device)
@@ -96,7 +97,7 @@ def evaluate_model(model, warp_layer, val_loader, device, args, vx, writer=None)
     dice_metric_before, dice_metric_after = DiceMetric(), DiceMetric()
 
     with torch.no_grad():
-        for batch_data in tqdm(val_loader, desc="Validation Epoch"):
+        for batch_data in tqdm(val_loader, desc="Validation Epoch", file=sys.stdout):
             fixed_image = batch_data["fixed_image"].to(device)
             moving_image = batch_data["moving_image"].to(device)
             moving_label = batch_data["moving_label"].to(device)
