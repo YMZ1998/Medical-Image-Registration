@@ -14,8 +14,7 @@ def get_net(args):
     print('★' * 30)
     print(f'model:{args.arch}\n'
           f'epoch:{args.epochs}\n'
-          f'image size:{args.image_size}\n'
-          f'num classes:{args.num_classes}')
+          f'image size:{args.image_size}\n')
     print('★' * 30)
     device = get_device()
 
@@ -84,16 +83,14 @@ def parse_args():
 
     parser.add_argument('--lr', default=1e-4, type=float, help='initial learning rate')
     parser.add_argument('--resume', action='store_true', default=False, help='resume from previous checkpoint')
-    parser.add_argument('--tensorboard', action='store_true', default=False, help='write model and tensorboard logs')
+    parser.add_argument('--tensorboard', action='store_true', default=True, help='write model and tensorboard logs')
 
-    parser.add_argument("--image_size", default=(256, 256, 32), type=tuple, help="image size")
-    parser.add_argument("--num_classes", default=2, type=int)
+    parser.add_argument("--image_size", default=(224, 192, 224), type=tuple, help="image size")
     parser.add_argument("--batch_size", default=4, type=int)
     parser.add_argument("--epochs", default=200, type=int, metavar="N", help="number of total epochs to train")
 
     # Mixed precision training parameters
     parser.add_argument("--amp", default=True, type=bool, help="Use torch.cuda.amp for mixed precision training")
-    parser.add_argument("--tta", default=False, type=bool, help="TTA")
 
     args = parser.parse_args()
     print(args)

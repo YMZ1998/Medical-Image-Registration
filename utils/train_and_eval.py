@@ -1,3 +1,4 @@
+import os
 import time
 import torch
 from monai.metrics import DiceMetric
@@ -84,7 +85,7 @@ def train_one_epoch(model, train_loader, optimizer, lr_scheduler, loss_fun, warp
     return epoch_loss
 
 
-def evaluate_model(model, warp_layer, val_loader, device, args, writer=None):
+def evaluate_model(model, warp_layer, val_loader, device, args, vx, writer=None):
     """
     Evaluate the model on validation data.
     """
@@ -109,8 +110,8 @@ def evaluate_model(model, warp_layer, val_loader, device, args, writer=None):
                     fixed_image, moving_image, moving_label, fixed_keypoints, model, warp_layer
                 )
 
-            tre_before += tre(fixed_keypoints, moving_keypoints, vx=args.vx)
-            tre_after += tre(fixed_keypoints + ddf_keypoints, moving_keypoints, vx=args.vx)
+            tre_before += tre(fixed_keypoints, moving_keypoints, vx=vx)
+            tre_after += tre(fixed_keypoints + ddf_keypoints, moving_keypoints, vx=vx)
 
             pred_label = pred_label.round()
             dice_metric_before(y_pred=moving_label, y=fixed_label)
@@ -138,3 +139,22 @@ def evaluate_model(model, warp_layer, val_loader, device, args, writer=None):
     )
 
     return tre_after, dice_after
+
+
+def save_best_model(model, epoch, metric, best_metric, path_prefix, suffix, dir_save, prev_path):
+    if (suffix == "tre" and metric < best_metric) or (suffix == "dice" and metric > best_metric):
+        if prev_path != "":
+            os.remove(os.path.join(dir_save, prev_path))
+        filename = f"{path_prefix}_kpt_loss_best_{suffix}_{epoch + 1}_{metric:.3f}.pth"
+        torch.save(model.state_dict(), os.path.join(dir_save, filename))
+        print(f"{epoch + 1} | Saving best {suffix.upper()} model: {filename}")
+        return filename, metric
+    return prev_path, best_metric
+
+
+def save_latest_model(model, path_prefix, dir_save, prev_path):
+    if prev_path != "":
+        os.remove(os.path.join(dir_save, prev_path))
+    filename = f"{path_prefix}_kpt_loss_latest.pth"
+    torch.save(model.state_dict(), os.path.join(dir_save, filename))
+    return filename

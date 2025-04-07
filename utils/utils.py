@@ -6,11 +6,14 @@ import torch.nn.functional as F
 from monai.data.utils import list_data_collate
 from monai.losses import BendingEnergyLoss, DiceLoss
 from torch.nn import MSELoss
+import matplotlib.pyplot as plt
+
 
 def remove_and_create_dir(path):
     if os.path.exists(path):
         shutil.rmtree(path)
     os.makedirs(path, exist_ok=True)
+
 
 def forward(fixed_image, moving_image, moving_label, fixed_keypoints, model, warp_layer):
     """
@@ -120,3 +123,23 @@ def loss_fun(
         loss_terms.append(lam_r * BendingEnergyLoss()(ddf_image))
 
     return sum(loss_terms) if loss_terms else 0.0
+
+
+def plot_training_logs(logs, titles, figsize=(15, 5), save_path=None):
+    num_plots = len(logs)
+    fig, axs = plt.subplots(1, num_plots, figsize=figsize)
+    if num_plots == 1:
+        axs = [axs]
+
+    for i in range(num_plots):
+        axs[i].plot(logs[i])
+        axs[i].set_title(titles[i])
+        axs[i].set_xlabel("Epoch")
+        axs[i].set_ylabel("Value")
+
+    plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path)
+        print(f"Saved plot to {save_path}")
+    else:
+        plt.show()

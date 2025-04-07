@@ -18,9 +18,9 @@ from tqdm import tqdm
 
 from parse_args import get_device, parse_args, get_net
 from utils.dataset import get_files, overlay_img
-from utils.train_and_eval import train_one_epoch, evaluate_model
+from utils.train_and_eval import train_one_epoch, evaluate_model, save_best_model, save_latest_model
 from utils.transforms import get_train_transforms, get_val_transforms
-from utils.utils import forward, loss_fun, tre, collate_fn, remove_and_create_dir
+from utils.utils import forward, loss_fun, tre, collate_fn, remove_and_create_dir, plot_training_logs
 
 if __name__ == "__main__":
     set_determinism(seed=0)
@@ -53,8 +53,8 @@ if __name__ == "__main__":
     vx = np.array([1.5, 1.5, 1.5]) / (np.array(target_res) / np.array([224, 192, 224]))
     vx = torch.tensor(vx).to(device)
 
-    # tensorboard --logdir="./models/nlst/tre-segresnet"
-    dir_save = os.path.join(os.getcwd(), "models", "nlst", "tre-segresnet")
+    # tensorboard --logdir="./models/nlst/seg_resnet"
+    dir_save = os.path.join(os.getcwd(), "models", "nlst", args.arch)
     # remove_and_create_dir(dir_save)
     os.makedirs(dir_save, exist_ok=True)
     writer = None
@@ -84,7 +84,6 @@ if __name__ == "__main__":
     # scaler = torch.GradScaler("cuda")
     #
     # # Start torch training loop
-    val_interval = 5
     best_eval_tre = float("inf")
     best_eval_dice = 0
     log_train_loss = []
@@ -99,41 +98,25 @@ if __name__ == "__main__":
         log_train_loss.append(epoch_loss)
 
         # Eval
-        tre_after, dice_after = evaluate_model(model, warp_layer, val_loader, device, args, writer)
+        tre_after, dice_after = evaluate_model(model, warp_layer, val_loader, device, args, vx, writer)
 
-        if tre_after < best_eval_tre:
-            best_eval_tre = tre_after
-            # Save best model based on TRE
-            if pth_best_tre != "":
-                os.remove(os.path.join(dir_save, pth_best_tre))
-            pth_best_tre = f"segresnet_kpt_loss_best_tre_{epoch + 1}_{best_eval_tre:.3f}.pth"
-            torch.save(model.state_dict(), os.path.join(dir_save, pth_best_tre))
-            print(f"{epoch + 1} | Saving best TRE model: {pth_best_tre}")
+        # === Save best models ===
+        pth_best_tre, best_eval_tre = save_best_model(
+            model, epoch, tre_after, best_eval_tre, args.arch, "tre", dir_save, pth_best_tre
+        )
 
-        if dice_after > best_eval_dice:
-            best_eval_dice = dice_after
-            # Save best model based on Dice
-            if pth_best_dice != "":
-                os.remove(os.path.join(dir_save, pth_best_dice))
-            pth_best_dice = f"segresnet_kpt_loss_best_dice_{epoch + 1}_{best_eval_dice:.3f}.pth"
-            torch.save(model.state_dict(), os.path.join(dir_save, pth_best_dice))
-            print(f"{epoch + 1} | Saving best Dice model: {pth_best_dice}")
+        pth_best_dice, best_eval_dice = save_best_model(
+            model, epoch, dice_after, best_eval_dice, args.arch, "dice", dir_save, pth_best_dice
+        )
 
-        # Save latest model
-        if pth_latest != "":
-            os.remove(os.path.join(dir_save, pth_latest))
-        pth_latest = "segresnet_kpt_loss_latest.pth"
-        torch.save(model.state_dict(), os.path.join(dir_save, pth_latest))
+        # === Save latest ===
+        pth_latest = save_latest_model(model, args.arch, dir_save, pth_latest)
 
-    # log_val_tre = [x.item() for x in log_val_tre]
-    fig, axs = plt.subplots(1, 3, figsize=(15, 5))
-    axs[0].plot(log_train_loss)
-    axs[0].title.set_text("train_loss")
-    axs[1].plot(log_val_dice)
-    axs[1].title.set_text("val_dice")
-    axs[2].plot(log_val_tre)
-    axs[2].title.set_text("val_tre")
-    plt.show()
+    plot_training_logs(
+        logs=[log_train_loss, log_val_dice, log_val_tre],
+        titles=["Train Loss", "Validation Dice", "Validation TRE"],
+        save_path=os.path.join(dir_save, "training_logs.png")
+    )
 
     load_pretrained_model_weights = False
     if load_pretrained_model_weights:
@@ -151,7 +134,7 @@ if __name__ == "__main__":
             dropout_prob=0.2,
         )
         # load model weights
-        filename_best_model = glob.glob(os.path.join(dir_load, "segresnet_kpt_loss_best_tre*"))[0]
+        filename_best_model = glob.glob(os.path.join(dir_load, f"{args.arch}_kpt_loss_best_tre*"))[0]
         model.load_state_dict(torch.load(filename_best_model, weights_only=True))
         # to GPU
         model.to(device)
