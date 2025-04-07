@@ -1,4 +1,5 @@
 import argparse
+import os
 
 import torch
 from monai.networks.nets import DynUNet, UNet, UNETR, SwinUNETR, SegResNet
@@ -21,7 +22,7 @@ def get_net(args):
     if args.arch == "dynunet":
         net = DynUNet(
             spatial_dims=3,
-            in_channels=1,
+            in_channels=2,
             out_channels=args.num_classes,
             kernel_size=[[3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]],
             strides=[[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2]],
@@ -31,7 +32,7 @@ def get_net(args):
     elif args.arch == "unet":
         net = UNet(
             spatial_dims=3,
-            in_channels=1,
+            in_channels=2,
             out_channels=args.num_classes,
             channels=(16, 32, 64, 128, 256),
             strides=(2, 2, 2, 2),
@@ -40,7 +41,7 @@ def get_net(args):
     elif args.arch == 'unetr':
         net = UNETR(
             spatial_dims=3,
-            in_channels=1,
+            in_channels=2,
             out_channels=args.num_classes,
             img_size=args.image_size,
             feature_size=16,
@@ -52,7 +53,7 @@ def get_net(args):
         # !wget https://github.com/Project-MONAI/MONAI-extra-test-data/releases/download/0.8.1/model_swinvit.pt
         net = SwinUNETR(
             img_size=args.image_size,
-            in_channels=1,
+            in_channels=2,
             out_channels=args.num_classes,
             feature_size=48,
             use_checkpoint=True,
@@ -61,9 +62,9 @@ def get_net(args):
         net = SegResNet(
             spatial_dims=3,
             in_channels=2,
-            out_channels=3,
-            blocks_down=[1, 2, 2, 4],
-            blocks_up=[1, 1, 1],
+            out_channels=args.num_classes,
+            blocks_down=(1, 2, 2, 4),
+            blocks_up=(1, 1, 1),
             init_filters=16,
             dropout_prob=0.2,
         )
@@ -75,17 +76,16 @@ def get_net(args):
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Run a basic UNet segmentation baseline.")
-    parser.add_argument('--arch', '-a', metavar='ARCH', default='seg_resnet', help='unet/dynunet/unetr')
-    parser.add_argument("--data_folder", default=r"./data", type=str, help="training data folder")
-    parser.add_argument("--model_folder", default="./models", type=str, help="model folder")
-    parser.add_argument("--prediction_folder", default="./predictions", type=str, help="prediction folder")
-    parser.add_argument("--inference_dir", default="./results", type=str, help="inference folder")
+    parser.add_argument('--arch', '-a', metavar='ARCH', default='dynunet', help='unet/dynunet/seg_resnet')
+    parser.add_argument("--data_path", default=r"./data", type=str, help="training data folder")
+    parser.add_argument("--result_path", default="./results", type=str, help="inference folder")
 
     parser.add_argument('--lr', default=1e-4, type=float, help='initial learning rate')
     parser.add_argument('--resume', action='store_true', default=False, help='resume from previous checkpoint')
     parser.add_argument('--tensorboard', action='store_true', default=True, help='write model and tensorboard logs')
 
-    parser.add_argument("--image_size", default=(224, 192, 224), type=tuple, help="image size")
+    parser.add_argument("--image_size", default=(96, 96, 96), type=tuple, help="image size")
+    parser.add_argument("--num_classes", default=3, type=int)
     parser.add_argument("--batch_size", default=4, type=int)
     parser.add_argument("--epochs", default=200, type=int, metavar="N", help="number of total epochs to train")
 
@@ -93,6 +93,10 @@ def parse_args():
     parser.add_argument("--amp", default=True, type=bool, help="Use torch.cuda.amp for mixed precision training")
 
     args = parser.parse_args()
+
+    args.model_dir = os.path.join(os.getcwd(), "models", "nlst", args.arch)
+    os.makedirs(args.model_dir, exist_ok=True)
+
     print(args)
 
     return args
@@ -103,8 +107,8 @@ if __name__ == '__main__':
 
     args = parse_args()
     args.arch = 'dynunet'
-    args.image_size = (256, 256, 32)
+    # args.image_size = (256, 256, 32)
 
     model = get_net(args)
 
-    summary(model, (1, args.image_size[0], args.image_size[1], args.image_size[2]))
+    summary(model, (2, args.image_size[0], args.image_size[1], args.image_size[2]))

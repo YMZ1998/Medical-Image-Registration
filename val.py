@@ -41,8 +41,7 @@ def val():
     warp_layer = Warp().to(device)
 
     # Load best model checkpoint
-    model_dir = os.path.join(os.getcwd(), "models", "nlst", args.arch)
-    best_model_files = glob.glob(os.path.join(model_dir, "*_kpt_loss_best_tre*"))
+    best_model_files = glob.glob(os.path.join(args.model_dir, "*_kpt_loss_best_tre*"))
     if not best_model_files:
         raise FileNotFoundError("No best model checkpoint found!")
     model.load_state_dict(torch.load(best_model_files[0], weights_only=True))

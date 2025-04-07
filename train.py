@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     args = parse_args()
     device = get_device()
-    train_files, val_files = get_files(os.path.join(args.data_folder, "NLST"))
+    train_files, val_files = get_files(os.path.join(args.data_path, "NLST"))
     pprint(train_files[:2])
 
     # === Resolution Config ===
@@ -35,10 +35,8 @@ if __name__ == "__main__":
     vx = torch.tensor(np.array([1.5, 1.5, 1.5]) / (np.array(target_res) / np.array([224, 192, 224]))).to(device)
 
     # === Logging and Saving Paths ===
-    dir_save = os.path.join(os.getcwd(), "models", "nlst", args.arch)
-    os.makedirs(dir_save, exist_ok=True)
     print(f'tensorboard --logdir="./models/nlst/{args.arch}"')
-    writer = SummaryWriter(log_dir=dir_save) if args.tensorboard else None
+    writer = SummaryWriter(log_dir=args.model_dir) if args.tensorboard else None
 
     # === Datasets and Loaders ===
     train_ds = Dataset(train_files, transform=get_train_transforms(spatial_size, target_res))
@@ -71,15 +69,15 @@ if __name__ == "__main__":
         log_val_dice.append(dice_after)
 
         pth_best_tre, best_eval_tre = save_best_model(model, epoch, tre_after, best_eval_tre, args.arch, "tre",
-                                                      dir_save, pth_best_tre)
+                                                      args.model_dir, pth_best_tre)
         pth_best_dice, best_eval_dice = save_best_model(model, epoch, dice_after, best_eval_dice, args.arch, "dice",
-                                                        dir_save, pth_best_dice)
-        pth_latest = save_latest_model(model, args.arch, dir_save, pth_latest)
+                                                        args.model_dir, pth_best_dice)
+        pth_latest = save_latest_model(model, args.arch, args.model_dir, pth_latest)
 
     plot_training_logs(
         [log_train_loss, log_val_dice, log_val_tre],
         ["Train Loss", "Validation Dice", "Validation TRE"],
-        os.path.join(dir_save, "training_logs.png")
+        os.path.join(args.model_dir, "training_logs.png")
     )
 
     # === Evaluation and Visualization ===
