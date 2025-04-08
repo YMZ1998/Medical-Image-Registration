@@ -27,6 +27,7 @@ if __name__ == "__main__":
     device = args.device
     train_files, val_files = get_files(os.path.join(args.data_path, "NLST"))
     pprint(train_files[:2])
+    print(len(train_files), len(val_files))
 
     # === Resolution Config ===
     full_res_training = False

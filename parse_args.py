@@ -23,9 +23,9 @@ def get_net(args):
             spatial_dims=3,
             in_channels=2,
             out_channels=args.num_classes,
-            kernel_size=[[3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]],
-            strides=[[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2]],
-            upsample_kernel_size=[[2, 2, 2], [2, 2, 2], [2, 2, 2]],
+            kernel_size=[[3, 3, 3], [3, 3, 3], [3, 3, 3]],
+            strides=[[1, 1, 1], [2, 2, 2], [2, 2, 2]],
+            upsample_kernel_size=[[2, 2, 2], [2, 2, 2]],
             dropout=0.1,
         )
     elif args.arch == "unet":
