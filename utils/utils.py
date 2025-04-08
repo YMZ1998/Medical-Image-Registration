@@ -132,6 +132,11 @@ def plot_training_logs(logs, titles, save_path=None, figsize=(15, 5)):
         axs = [axs]
 
     for i in range(num_plots):
+        if logs[i].is_cuda:
+            logs[i] = logs[i].cpu().numpy()
+        else:
+            logs[i] = logs[i].numpy()
+
         axs[i].plot(logs[i])
         axs[i].set_title(titles[i])
         axs[i].set_xlabel("Epoch")

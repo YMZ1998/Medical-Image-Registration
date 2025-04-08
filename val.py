@@ -27,9 +27,8 @@ def val():
     train_files, val_files = get_files(os.path.join(args.data_path, "NLST"))
 
     # Resolution setup
-    full_res_training = False
-    target_res = [224, 192, 224] if full_res_training else [96, 96, 96]
-    spatial_size = [-1, -1, -1] if full_res_training else target_res
+    target_res = [224, 192, 224] if args.full_res_training else [96, 96, 96]
+    spatial_size = [-1, -1, -1] if args.full_res_training else target_res
 
     val_transforms = get_val_transforms(spatial_size)
 
@@ -81,11 +80,13 @@ def val():
     sitk.WriteImage(pred_image_itk, os.path.join(save_dir, "pred_image.nii.gz"))
     sitk.WriteImage(pred_label_itk, os.path.join(save_dir, "pred_label.nii.gz"))
 
-    # torch.save(ddf_image[0].cpu(), os.path.join(save_dir, "ddf_image.pt"))
-    # torch.save(ddf_keypoints[0].cpu(), os.path.join(save_dir, "ddf_keypoints.pt"))
-    # torch.save(check_data["fixed_image"][0].cpu(), os.path.join(save_dir, "fixed_image.pt"))
-    # torch.save(check_data["moving_image"][0].cpu(), os.path.join(save_dir, "moving_image.pt"))
-    # torch.save(check_data["moving_label"][0].cpu(), os.path.join(save_dir, "moving_label.pt"))
+    save_pt=False
+    if save_pt:
+        torch.save(ddf_image[0].cpu(), os.path.join(save_dir, "ddf_image.pt"))
+        torch.save(ddf_keypoints[0].cpu(), os.path.join(save_dir, "ddf_keypoints.pt"))
+        torch.save(check_data["fixed_image"][0].cpu(), os.path.join(save_dir, "fixed_image.pt"))
+        torch.save(check_data["moving_image"][0].cpu(), os.path.join(save_dir, "moving_image.pt"))
+        torch.save(check_data["moving_label"][0].cpu(), os.path.join(save_dir, "moving_label.pt"))
 
     # Visualization
     visualize_registration(check_data, pred_image, pred_label, ddf_keypoints, target_res)

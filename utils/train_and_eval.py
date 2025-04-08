@@ -5,10 +5,10 @@ import torch
 from monai.metrics import DiceMetric
 from tqdm import tqdm
 
-from utils.utils import tre, forward
+from utils.utils import tre, forward, loss_fun
 
 
-def train_one_epoch(model, train_loader, optimizer, lr_scheduler, loss_fun, warp_layer, device, args, writer=None):
+def train_one_epoch(model, train_loader, optimizer, lr_scheduler,  warp_layer, device, args, writer=None):
     """
     Train the model for one epoch.
 
@@ -27,10 +27,10 @@ def train_one_epoch(model, train_loader, optimizer, lr_scheduler, loss_fun, warp
     - epoch_loss: Average loss for the epoch.
     """
     # loss weights (set to zero to disable loss term)
-    lam_t = 1e0  # TRE  (keypoint loss)
-    lam_l = 0  # Dice (mask overlay)
-    lam_m = 0  # MSE (image similarity)
-    lam_r = 0  # Bending loss (smoothness of the DDF)
+    lam_t = 0.5  # TRE  (keypoint loss)
+    lam_l = 0.3  # Dice (mask overlay)
+    lam_m = 0.2  # MSE (image similarity)
+    lam_r = 0.  # Bending loss (smoothness of the DDF)
     scaler = torch.cuda.amp.GradScaler() if args.amp else None
 
     t0_train = time.time()
@@ -94,7 +94,8 @@ def evaluate_model(model, warp_layer, val_loader, device, args, vx, writer=None)
     model.eval()
 
     n_steps, tre_before, tre_after = 0, 0, 0
-    dice_metric_before, dice_metric_after = DiceMetric(), DiceMetric()
+    dice_metric_before = DiceMetric(include_background=True, reduction="mean", get_not_nans=False)
+    dice_metric_after = DiceMetric(include_background=True, reduction="mean", get_not_nans=False)
 
     with torch.no_grad():
         for batch_data in tqdm(val_loader, desc="Validation Epoch", file=sys.stdout):

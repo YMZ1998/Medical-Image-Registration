@@ -5,7 +5,6 @@ from pprint import pprint
 import numpy as np
 import torch
 from monai.data import Dataset, DataLoader
-from monai.metrics import DiceMetric
 from monai.networks.blocks import Warp
 from monai.utils import set_determinism, first
 from torch.utils.tensorboard import SummaryWriter
@@ -14,10 +13,11 @@ from parse_args import parse_args, get_net
 from utils.dataset import get_files
 from utils.train_and_eval import train_one_epoch, evaluate_model, save_best_model, save_latest_model
 from utils.transforms import get_train_transforms, get_val_transforms
-from utils.utils import forward, loss_fun, collate_fn, plot_training_logs
+from utils.utils import forward, collate_fn, plot_training_logs
 from val import visualize_registration
 
-if __name__ == "__main__":
+
+def train():
     # === Setup ===
     set_determinism(seed=0)
     torch.backends.cudnn.benchmark = True
@@ -30,9 +30,8 @@ if __name__ == "__main__":
     print(len(train_files), len(val_files))
 
     # === Resolution Config ===
-    full_res_training = False
-    target_res = [224, 192, 224] if full_res_training else [96, 96, 96]
-    spatial_size = [-1, -1, -1] if full_res_training else target_res
+    target_res = [224, 192, 224] if args.full_res_training else [96, 96, 96]
+    spatial_size = [-1, -1, -1] if args.full_res_training else target_res
     vx = torch.tensor(np.array([1.5, 1.5, 1.5]) / (np.array(target_res) / np.array([224, 192, 224]))).to(device)
 
     # === Logging and Saving Paths ===
@@ -51,17 +50,13 @@ if __name__ == "__main__":
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
 
-    # === Metrics ===
-    dice_metric_before = DiceMetric(include_background=True, reduction="mean", get_not_nans=False)
-    dice_metric_after = DiceMetric(include_background=True, reduction="mean", get_not_nans=False)
-
     # === Training Loop ===
     log_train_loss, log_val_dice, log_val_tre = [], [], []
     best_eval_tre, best_eval_dice = float("inf"), 0.0
     pth_best_tre, pth_best_dice, pth_latest = "", "", ""
 
     for epoch in range(args.epochs):
-        epoch_loss = train_one_epoch(model, train_loader, optimizer, lr_scheduler, loss_fun, warp_layer, device, args,
+        epoch_loss = train_one_epoch(model, train_loader, optimizer, lr_scheduler,  warp_layer, device, args,
                                      writer)
         log_train_loss.append(epoch_loss)
 
@@ -102,3 +97,6 @@ if __name__ == "__main__":
     # Visualization
     visualize_registration(check_data, pred_image, pred_label, ddf_keypoints, target_res)
 
+
+if __name__ == "__main__":
+    train()

@@ -1,25 +1,16 @@
 import json
 import os
-from typing import Tuple, List, Dict
 
 
-def get_files(data_dir: str) -> Tuple[List[Dict], List[Dict]]:
-    """
-    Load training and validation file paths from NLST dataset JSON.
-
-    Args:
-        data_dir (str): Root directory of the dataset.
-
-    Returns:
-        Tuple containing list of training and validation data dictionaries.
-    """
-    data_json = os.path.join(data_dir, "NLST_dataset.json")
-    with open(data_json, "r") as f:
-        data = json.load(f)
-
-    def build_file_entry(pair):
-        fixed = os.path.basename(pair["fixed"]).split(".")[0]
-        moving = os.path.basename(pair["moving"]).split(".")[0]
+def build_file_entry(data_dir, pair, only_image=False):
+    fixed = os.path.basename(pair["fixed"]).split(".")[0]
+    moving = os.path.basename(pair["moving"]).split(".")[0]
+    if only_image:
+        return {
+            "fixed_image": os.path.join(data_dir, "imagesTr", f"{fixed}.nii.gz"),
+            "moving_image": os.path.join(data_dir, "imagesTr", f"{moving}.nii.gz"),
+        }
+    else:
         return {
             "fixed_image": os.path.join(data_dir, "imagesTr", f"{fixed}.nii.gz"),
             "moving_image": os.path.join(data_dir, "imagesTr", f"{moving}.nii.gz"),
@@ -29,9 +20,25 @@ def get_files(data_dir: str) -> Tuple[List[Dict], List[Dict]]:
             "moving_keypoints": os.path.join(data_dir, "keypointsTr", f"{moving}.csv"),
         }
 
-    train_files = [build_file_entry(pair) for pair in data["training_paired_images"]]
-    val_files = [build_file_entry(pair) for pair in data["registration_val"]]
+
+def get_files(data_dir):
+    data_json = os.path.join(data_dir, "NLST_dataset.json")
+    with open(data_json, "r") as f:
+        data = json.load(f)
+    train_files = [build_file_entry(data_dir, pair) for pair in data["training_paired_images"]]
+    val_files = [build_file_entry(data_dir, pair)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           for pair in data["registration_val"]]
+
     return train_files, val_files
+
+
+def get_test_files(data_dir):
+    data_json = os.path.join(data_dir, "NLST_dataset.json")
+    with open(data_json, "r") as f:
+        data = json.load(f)
+
+    test_files = [build_file_entry(data_dir, pair, True) for pair in data["registration_val"]]
+
+    return test_files
 
 
 # -------------------- TESTING CODE BELOW -------------------- #
@@ -50,6 +57,7 @@ def visualize_check_sample(train_files, spatial_size, target_res):
 
     # Extract and permute images for visualization
     def prep(vol): return vol[0][0].permute(1, 0, 2)
+
     fixed_image = prep(check_data["fixed_image"])
     moving_image = prep(check_data["moving_image"])
     fixed_label = prep(check_data["fixed_label"])
@@ -75,9 +83,11 @@ def visualize_check_sample(train_files, spatial_size, target_res):
     # Visualize keypoints
     fig = plt.figure()
     ax = fig.add_subplot(projection="3d")
-    ax.scatter(check_data["fixed_keypoints"][0][:, 0], check_data["fixed_keypoints"][0][:, 1], check_data["fixed_keypoints"][0][:, 2],
+    ax.scatter(check_data["fixed_keypoints"][0][:, 0], check_data["fixed_keypoints"][0][:, 1],
+               check_data["fixed_keypoints"][0][:, 2],
                s=10.0, marker="o", color="lightblue")
-    ax.scatter(check_data["moving_keypoints"][0][:, 0], check_data["moving_keypoints"][0][:, 1], check_data["moving_keypoints"][0][:, 2],
+    ax.scatter(check_data["moving_keypoints"][0][:, 0], check_data["moving_keypoints"][0][:, 1],
+               check_data["moving_keypoints"][0][:, 2],
                s=10.0, marker="o", color="orange")
     ax.view_init(-10, 80)
     ax.set_aspect("auto")
@@ -100,3 +110,6 @@ if __name__ == "__main__":
     spatial_size = [-1, -1, -1] if full_res_training else target_res
 
     visualize_check_sample(train_files, spatial_size, target_res)
+
+
+

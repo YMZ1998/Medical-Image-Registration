@@ -75,7 +75,7 @@ def get_net(args):
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Run a basic UNet segmentation baseline.")
-    parser.add_argument('--arch', '-a', metavar='ARCH', default='dynunet', help='unet/dynunet/seg_resnet')
+    parser.add_argument('--arch', '-a', metavar='ARCH', default='seg_resnet', help='unet/dynunet/seg_resnet')
     parser.add_argument("--data_path", default=r"./data", type=str, help="training data folder")
     parser.add_argument("--result_path", default="./results", type=str, help="inference folder")
 
@@ -83,6 +83,7 @@ def parse_args():
     parser.add_argument('--resume', action='store_true', default=False, help='resume from previous checkpoint')
     parser.add_argument('--tensorboard', action='store_true', default=True, help='write model and tensorboard logs')
 
+    parser.add_argument('--full_res_training', action='store_true', default=True, help='full resolution training')
     parser.add_argument("--image_size", default=(96, 96, 96), type=tuple, help="image size")
     parser.add_argument("--num_classes", default=3, type=int)
     parser.add_argument("--batch_size", default=4, type=int)
@@ -94,6 +95,7 @@ def parse_args():
 
     args = parser.parse_args()
 
+    args.image_size = [224, 192, 224] if args.full_res_training else [96, 96, 96]
     args.model_dir = os.path.join(os.getcwd(), "models", "nlst", args.arch)
     os.makedirs(args.model_dir, exist_ok=True)
 
