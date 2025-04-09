@@ -124,6 +124,12 @@ def loss_fun(
 
     return sum(loss_terms) if loss_terms else 0.0
 
+def to_numpy(x):
+    if isinstance(x, torch.Tensor):
+        return x.detach().cpu().numpy()
+    return x
+
+
 
 def plot_training_logs(logs, titles, save_path=None, figsize=(15, 5)):
     num_plots = len(logs)
@@ -132,10 +138,7 @@ def plot_training_logs(logs, titles, save_path=None, figsize=(15, 5)):
         axs = [axs]
 
     for i in range(num_plots):
-        if logs[i].is_cuda:
-            logs[i] = logs[i].cpu().numpy()
-        else:
-            logs[i] = logs[i].numpy()
+        logs[i] = to_numpy(logs[i])
 
         axs[i].plot(logs[i])
         axs[i].set_title(titles[i])
@@ -151,11 +154,13 @@ def plot_training_logs(logs, titles, save_path=None, figsize=(15, 5)):
 
 
 if __name__ == "__main__":
-    log_train_loss = [1, 2, 3, 4, 5]
-    log_val_dice = [0.9, 0.8, 0.7, 0.6, 0.5]
-    log_val_tre = [0.1, 0.2, 0.3, 0.4, 0.5]
+    log_train_loss = torch.tensor([1, 2, 3, 4, 5], dtype=torch.float32)
+    log_val_dice = torch.tensor([0.9, 0.8, 0.7, 0.6, 0.5], dtype=torch.float32)
+    log_val_tre = torch.tensor([0.1, 0.2, 0.3, 0.4, 0.5], dtype=torch.float32)
     plot_training_logs(
         [log_train_loss, log_val_dice, log_val_tre],
         ["Train Loss", "Validation Dice", "Validation TRE"],
         # "training_logs.png"
     )
+
+

@@ -84,9 +84,9 @@ def parse_args():
     parser.add_argument('--tensorboard', action='store_true', default=True, help='write model and tensorboard logs')
 
     parser.add_argument('--full_res_training', action='store_true', default=True, help='full resolution training')
-    parser.add_argument("--image_size", default=(96, 96, 96), type=tuple, help="image size")
+    # parser.add_argument("--image_size", default=(96, 96, 96), type=tuple, help="image size")
     parser.add_argument("--num_classes", default=3, type=int)
-    parser.add_argument("--batch_size", default=4, type=int)
+    # parser.add_argument("--batch_size", default=2, type=int)
     parser.add_argument("--epochs", default=200, type=int, metavar="N", help="number of total epochs to train")
     # parser.add_argument("--device", default="cuda", type=str)
 
@@ -96,6 +96,8 @@ def parse_args():
     args = parser.parse_args()
 
     args.image_size = [224, 192, 224] if args.full_res_training else [96, 96, 96]
+    args.batch_size = 1 if args.full_res_training else 4
+
     args.model_dir = os.path.join(os.getcwd(), "models", "nlst", args.arch)
     os.makedirs(args.model_dir, exist_ok=True)
 
