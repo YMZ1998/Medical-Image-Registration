@@ -79,7 +79,7 @@ def visualize_one_case(check_data, pred_image, phi, target_res):
 
     phi = phi + identity
 
-    for slice_idx in range(10, 100, 10):
+    for slice_idx in range(30, 120, 10):
         fig, axs = plt.subplots(1, 4, figsize=(15, 5))
         show_img(fixed_image, slice_idx, axs[0], "Fixed Image")
         show_img(moving_image, slice_idx, axs[1], "Moving Image")

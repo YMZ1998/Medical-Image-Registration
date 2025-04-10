@@ -16,8 +16,7 @@ class Model(nn.Module):
         super().__init__()
         self.model = model
 
-    def forward(self, moving, fixed):
-        x = torch.cat((moving, fixed), dim=1)  # [B, 2, D, H, W]
+    def forward(self, x):
         ddf = self.model(x)  # 预测位移场
         return ddf
 
@@ -30,24 +29,22 @@ def export_to_onnx(model, input_shapes, save_path="model.onnx", device="cuda"):
     model.eval()
 
     # 创建多个输入张量
-    dummy_input1 = torch.randn(*input_shapes).to(device)
-    dummy_input2 = torch.randn(*input_shapes).to(device)
+    dummy_input = torch.randn(*input_shapes).to(device)
 
-    torch_out = model(dummy_input1, dummy_input2)\
+    torch_out = model(dummy_input)
 
     print(torch_out.shape)
 
     torch.onnx.export(
         model,
-        (dummy_input1, dummy_input2),  # 传递多个输入
+        (dummy_input),  # 传递多个输入
         save_path,
-        input_names=["input1", "input2"],  # 指定多个输入的名字
+        input_names=["input"],  # 指定多个输入的名字
         output_names=["output"],
         export_params=True,
         opset_version=20,
         dynamic_axes={
-            "input1": {0: "batch_size"},
-            "input2": {0: "batch_size"},
+            "input": {0: "batch_size"},
             "output": {0: "batch_size"}
         },
         verbose=False,
@@ -66,8 +63,7 @@ def export_to_onnx(model, input_shapes, save_path="model.onnx", device="cuda"):
     # 使用 ONNXRuntime 进行推理并验证
     ort_session = onnxruntime.InferenceSession(save_path)
     ort_inputs = {
-        ort_session.get_inputs()[0].name: to_numpy(dummy_input1),
-        ort_session.get_inputs()[1].name: to_numpy(dummy_input2),
+        ort_session.get_inputs()[0].name: to_numpy(dummy_input),
     }
     ort_outs = ort_session.run(None, ort_inputs)
 
@@ -92,15 +88,15 @@ def main():
     print(f"Loading weights from: {best_model_files[0]}")
     model.load_state_dict(torch.load(best_model_files[0], weights_only=False, map_location='cpu'), strict=False)
 
-    input_shape = (1, 1, 96, 96, 96)
+    input_shape = (1, 2, 192, 192, 192)
     # input_shape = (1, 1, 224, 192, 224)
 
     save_path = os.path.join("../results", args.arch, "model.onnx")
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
-    model2= Model(model).to(device)
+    # model2= Model(model).to(device)
     # 导出并验证
-    export_to_onnx(model2, input_shape, save_path, device)
+    export_to_onnx(model, input_shape, save_path, device)
 
 
 if __name__ == "__main__":

@@ -170,7 +170,7 @@ def get_dynamic_axes(spatial_dims=None):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--output_dir', type=str, help='path to output the TorchScript', default='./models')
+    parser.add_argument('--output_dir', type=str, help='path to output the TorchScript', default='../models')
     parser.add_argument('--device', type=str, help='device (cpu or cuda:[number])', default='cuda:0')
     parser.add_argument("--export_type", type=str, choices=["onnx", "torchscript"], default="onnx")
     parser.add_argument("--rtol", type=float, default=1e-5)

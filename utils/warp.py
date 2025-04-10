@@ -121,4 +121,4 @@ if __name__ == "__main__":
     # 对比 ONNX 与 PyTorch 输出
     np.testing.assert_allclose(to_numpy(torch_out), ort_outs[0], rtol=1e-02, atol=1e-04)
     print("ONNXRuntime output matches PyTorch output!")
-    os.remove(save_path)
+    # os.remove(save_path)

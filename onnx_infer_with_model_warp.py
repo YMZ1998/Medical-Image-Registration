@@ -2,19 +2,21 @@ import glob
 import os
 import shutil
 import warnings
+import numpy as np
+import onnxruntime as ort
 from pprint import pprint
 
 import SimpleITK as sitk
 import torch
-# from monai.networks.blocks import Warp
+
+from utils.dataset import get_test_files
 from utils.warp import Warp
 from monai.transforms import (
     LoadImage, Compose, Resize, ToTensor, ScaleIntensityRange
 )
 from monai.utils import set_determinism
 
-from parse_args import parse_args, get_net
-from utils.dataset import get_test_files
+from parse_args import parse_args
 from utils.utils import remove_and_create_dir
 from utils.visualization import visualize_one_case
 
@@ -47,7 +49,7 @@ def load_moving(image_path, spatial_size):
 
 
 def save_array_as_nii(array, file_path, reference=None):
-    array = array * 1600 - 1200
+    # array = array * 1600 - 1200
     sitk_image = sitk.GetImageFromArray(array)
     sitk_image = sitk.Cast(sitk_image, sitk.sitkInt16)
     if reference is not None:
@@ -55,65 +57,56 @@ def save_array_as_nii(array, file_path, reference=None):
     sitk.WriteImage(sitk_image, file_path)
 
 
-def predict_single():
-    # Setup
+def predict_single_onnx():
     set_determinism(seed=0)
-    torch.backends.cudnn.benchmark = True
     warnings.filterwarnings("ignore")
 
     args = parse_args()
     target_res = [224, 192, 224] if args.full_res_training else [192, 192, 192]
     spatial_size = [-1, -1, -1] if args.full_res_training else target_res
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # Load test image pair (first one)
+    # Load image
     test_files = get_test_files(os.path.join(args.data_path, "NLST"))
-
     case_id = 5
-
     pprint(test_files[case_id])
     fixed_image_path = test_files[case_id]["fixed_image"]
     moving_image_path = test_files[case_id]["moving_image"]
 
-    # Preprocess
     fixed_image = load_and_preprocess(fixed_image_path, spatial_size)
     moving_image = load_and_preprocess(moving_image_path, spatial_size)
     original_moving_image = load_moving(moving_image_path, spatial_size)
 
-    # Load model
-    device = args.device
-    model = get_net(args).to(device)
-    warp_layer = Warp().to(device)
+    input_tensor = torch.cat((moving_image, fixed_image, original_moving_image), dim=1).numpy().astype(np.float32)
 
-    # Load checkpoint
-    best_model_files = glob.glob(os.path.join(args.model_dir, "*_kpt_loss_best_tre*"))
-    if not best_model_files:
-        raise FileNotFoundError("No best model checkpoint found!")
-    model.load_state_dict(torch.load(best_model_files[0], weights_only=True))
+    print(input_tensor.shape)
+
+    # Load ONNX model
+    onnx_model_path = os.path.join("./results", args.arch, "model_with_warp.onnx")
+    ort_session = ort.InferenceSession(onnx_model_path, providers=["CUDAExecutionProvider", "CPUExecutionProvider"])
 
     # Inference
-    model.eval()
-    with torch.no_grad():
-        with torch.autocast("cuda", enabled=args.amp):
-            fixed_image = fixed_image.to(device)
-            moving_image = moving_image.to(device)
-            original_moving_image = original_moving_image.to(device)
-            ddf_image = model(torch.cat((moving_image, fixed_image), dim=1)).float()
-            # warp moving image and label with the predicted ddf
-            pred_image = warp_layer(moving_image, ddf_image)
-            original_pred_image = warp_layer(original_moving_image, ddf_image)
+    ort_inputs = {"input": input_tensor}
+    ort_outs = ort_session.run(None, ort_inputs)
+
+    moved_image = torch.tensor(ort_outs[0]).to(device)
+    ddf_image = torch.tensor(ort_outs[1]).to(device)
+
+    print(moved_image.shape, ddf_image.shape)
+
 
     check_data = {
         "fixed_image": fixed_image,
         "moving_image": moving_image,
     }
     print("Visualizing...")
-    visualize_one_case(check_data, original_pred_image, ddf_image, target_res)
+    visualize_one_case(check_data, moved_image, ddf_image, target_res)
 
     print("Saving results...")
     save_dir = os.path.join("results", args.arch)
     remove_and_create_dir(save_dir)
 
-    pred_image_array = pred_image[0].cpu().numpy()[0].transpose(2, 1, 0)
+    pred_image_array = moved_image[0].cpu().numpy()[0].transpose(2, 1, 0)
     if args.full_res_training:
         save_array_as_nii(pred_image_array, os.path.join(save_dir, "pred_image.nii.gz"),
                           reference=sitk.ReadImage(fixed_image_path))
@@ -124,12 +117,8 @@ def predict_single():
         pred_image_itk = sitk.Cast(sitk.GetImageFromArray(pred_image_array), sitk.sitkFloat32)
         sitk.WriteImage(pred_image_itk, os.path.join(save_dir, "pred_image.nii.gz"))
 
-    save_pt = False
-    if save_pt:
-        torch.save(ddf_image[0].cpu(), os.path.join(save_dir, "ddf_image.pt"))
-        torch.save(fixed_image[0].cpu(), os.path.join(save_dir, "fixed_image.pt"))
-        torch.save(moving_image[0].cpu(), os.path.join(save_dir, "moving_image.pt"))
+    print("ONNX inference done!")
 
 
 if __name__ == "__main__":
-    predict_single()
+    predict_single_onnx()

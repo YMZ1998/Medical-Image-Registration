@@ -95,7 +95,7 @@ def parse_args():
 
     args = parser.parse_args()
 
-    args.image_size = [224, 192, 224] if args.full_res_training else [96, 96, 96]
+    args.image_size = [224, 192, 224] if args.full_res_training else [192, 192, 192]
     args.batch_size = 1 if args.full_res_training else 4
 
     args.model_dir = os.path.join(os.getcwd(), "models", "nlst", args.arch)
