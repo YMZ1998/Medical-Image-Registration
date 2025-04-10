@@ -124,11 +124,11 @@ def loss_fun(
 
     return sum(loss_terms) if loss_terms else 0.0
 
+
 def to_numpy(x):
     if isinstance(x, torch.Tensor):
         return x.detach().cpu().numpy()
     return x
-
 
 
 def plot_training_logs(logs, titles, save_path=None, figsize=(15, 5)):
@@ -162,5 +162,3 @@ if __name__ == "__main__":
         ["Train Loss", "Validation Dice", "Validation TRE"],
         # "training_logs.png"
     )
-
-

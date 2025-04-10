@@ -6,7 +6,8 @@ from pprint import pprint
 
 import SimpleITK as sitk
 import torch
-from monai.networks.blocks import Warp
+# from monai.networks.blocks import Warp
+from utils.warp import Warp
 from monai.transforms import (
     LoadImage, Compose, Resize, ToTensor, ScaleIntensityRange
 )
@@ -96,15 +97,15 @@ def predict_single():
             original_moving_image = original_moving_image.to(device)
             ddf_image = model(torch.cat((moving_image, fixed_image), dim=1)).float()
             # warp moving image and label with the predicted ddf
-            # pred_image = warp_layer(moving_image, ddf_image)
-            pred_image = warp_layer(original_moving_image, ddf_image)
+            pred_image = warp_layer(moving_image, ddf_image)
+            original_pred_image = warp_layer(original_moving_image, ddf_image)
 
     check_data = {
         "fixed_image": fixed_image,
         "moving_image": moving_image,
     }
     print("Visualizing...")
-    visualize_one_case(check_data, pred_image, ddf_image, target_res)
+    visualize_one_case(check_data, original_pred_image, ddf_image, target_res)
 
     print("Saving results...")
     save_dir = os.path.join("results", args.arch)

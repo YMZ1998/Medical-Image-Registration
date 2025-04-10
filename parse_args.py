@@ -83,7 +83,7 @@ def parse_args():
     parser.add_argument('--resume', action='store_true', default=False, help='resume from previous checkpoint')
     parser.add_argument('--tensorboard', action='store_true', default=True, help='write model and tensorboard logs')
 
-    parser.add_argument('--full_res_training', action='store_true', default=True, help='full resolution training')
+    parser.add_argument('--full_res_training', action='store_true', default=False, help='full resolution training')
     # parser.add_argument("--image_size", default=(96, 96, 96), type=tuple, help="image size")
     parser.add_argument("--num_classes", default=3, type=int)
     # parser.add_argument("--batch_size", default=2, type=int)
