@@ -1,7 +1,7 @@
 import torch
 from monai.networks import convert_to_onnx
-from monai.networks.nets import UNet, SegResNet
-import onnxruntime as ort
+from monai.networks.nets import UNet
+
 
 def test_seg_resnet_export():
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -24,9 +24,7 @@ def test_seg_resnet_export():
         num_res_units=2,
     ).to(device)
 
-    # input_tensor = torch.randn((1, 2, 96, 96, 96), device=device)
     input_tensor = torch.randn((1, 2, 192, 192, 192), device=device)
-    # input_tensor = torch.randn((1, 2, 224, 192, 224), device=device)
     onnx_model = convert_to_onnx(
         model=model,
         inputs=[input_tensor],

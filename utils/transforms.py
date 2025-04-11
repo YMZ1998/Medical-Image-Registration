@@ -41,6 +41,7 @@ class LoadKeypointsd(MapTransform):
             d[key] = keypoints  # [N, 3]
         return d
 
+
 def get_train_transforms(spatial_size, target_res):
     train_transforms = Compose(
         [
@@ -80,6 +81,7 @@ def get_train_transforms(spatial_size, target_res):
         ]
     )
     return train_transforms
+
 
 def get_val_transforms(spatial_size):
     val_transforms = Compose(
