@@ -9,6 +9,7 @@ import torch
 from monai.utils import set_determinism
 
 from parse_args import parse_args, get_net
+from utils import load_best_model
 from utils.dataset import get_test_files
 from utils.infer_transforms import load_image
 from utils.process_image import save_array_as_nii
@@ -45,10 +46,7 @@ def predict_single():
     warp_layer = Warp().to(device)
 
     # Load checkpoint
-    best_model_files = glob.glob(os.path.join(args.model_dir, "*_kpt_loss_best_tre*"))
-    if not best_model_files:
-        raise FileNotFoundError("No best model checkpoint found!")
-    model.load_state_dict(torch.load(best_model_files[0], weights_only=True))
+    model = load_best_model(model, args.model_dir)
 
     # Inference
     model.eval()

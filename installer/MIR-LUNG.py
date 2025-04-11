@@ -15,9 +15,6 @@ def remove_and_create_dir(path):
 
 
 def load_image(image_path: str, spatial_size: tuple, normalize: bool = True) -> np.ndarray:
-    """
-    Load image using SimpleITK, optionally normalize, resize to spatial_size, and return as np.ndarray (1, D, H, W)
-    """
     image = sitk.ReadImage(image_path)
     array = sitk.GetArrayFromImage(image).astype(np.float32)  # shape: (D, H, W)
 
@@ -81,7 +78,7 @@ def val_onnx(args) -> None:
 
     print(f"Moved output shape: {moved_np.shape}, DDF shape: {ddf_np.shape}")
 
-    print("Visualizing results...")
+    # print("Visualizing results...")
     # from utils.visualization_numpy import visualize_one_case
     # visualize_one_case({"fixed_image": fixed, "moving_image": moving}, moved_np, ddf_np)
 
@@ -91,17 +88,17 @@ def val_onnx(args) -> None:
     pred_array = moved_np[0, 0]
     ref_image = sitk.ReadImage(args.fixed_path)
 
-    save_array_as_nii(pred_array, os.path.join(args.result_path, "predict.nii.gz"), reference=ref_image)
+    save_array_as_nii(pred_array, os.path.join(args.result_path, args.file_name), reference=ref_image)
     print("ONNX inference complete!")
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Run ONNX model for registration purposes")
-    parser.add_argument('--onnx_path', type=str, default='./checkpoint/model_with_warp.onnx',
-                        help="Path to ONNX model file")
+    parser.add_argument('--onnx_path', type=str, default='./checkpoint/mir_lung.onnx', help="Path to ONNX model file")
     parser.add_argument('--fixed_path', type=str, default='./data/fixed.nii.gz', help="Path to fixed (reference) image")
     parser.add_argument('--moving_path', type=str, default='./data/moving.nii.gz', help="Path to moving image")
     parser.add_argument('--result_path', type=str, default='./result', help="Directory to save the prediction result")
+    parser.add_argument('--file_name', type=str, default='predict.nii.gz', help="Path to save results")
     parser.add_argument('--image_size', type=tuple, default=(192, 192, 192), help="Input image size as a tuple")
 
     args = parser.parse_args()

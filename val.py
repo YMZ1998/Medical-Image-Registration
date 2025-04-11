@@ -12,7 +12,7 @@ from monai.utils import set_determinism, first
 from parse_args import parse_args, get_net
 from utils.dataset import get_files
 from utils.transforms import get_val_transforms
-from utils.utils import forward
+from utils.utils import forward, load_best_model
 from utils.visualization import visualize_registration
 
 
@@ -27,7 +27,7 @@ def val():
     train_files, val_files = get_files(os.path.join(args.data_path, "NLST"))
 
     # Resolution setup
-    target_res = [224, 192, 224] if args.full_res_training else [96, 96, 96]
+    target_res = [224, 192, 224] if args.full_res_training else [192, 192, 192]
     spatial_size = [-1, -1, -1] if args.full_res_training else target_res
 
     val_transforms = get_val_transforms(spatial_size)
@@ -38,10 +38,7 @@ def val():
     warp_layer = Warp().to(device)
 
     # Load best model checkpoint
-    best_model_files = glob.glob(os.path.join(args.model_dir, "*_kpt_loss_best_tre*"))
-    if not best_model_files:
-        raise FileNotFoundError("No best model checkpoint found!")
-    model.load_state_dict(torch.load(best_model_files[0], weights_only=True))
+    model = load_best_model(model, args.model_dir)
 
     # Validation sample
     set_determinism(seed=1)

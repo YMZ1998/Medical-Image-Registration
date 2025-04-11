@@ -13,7 +13,7 @@ from parse_args import parse_args, get_net
 from utils.dataset import get_files
 from utils.train_and_eval import train_one_epoch, evaluate_model, save_best_model, save_latest_model
 from utils.transforms import get_train_transforms, get_val_transforms
-from utils.utils import forward, collate_fn, plot_training_logs
+from utils.utils import forward, collate_fn, plot_training_logs, load_best_model
 from val import visualize_registration
 
 
@@ -30,7 +30,7 @@ def train():
     print(len(train_files), len(val_files))
 
     # === Resolution Config ===
-    target_res = [224, 192, 224] if args.full_res_training else [96, 96, 96]
+    target_res = args.image_size
     spatial_size = [-1, -1, -1] if args.full_res_training else target_res
     vx = torch.tensor(np.array([1.5, 1.5, 1.5]) / (np.array(target_res) / np.array([224, 192, 224]))).to(device)
 
@@ -50,13 +50,16 @@ def train():
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
 
+    if args.resume:
+        model = load_best_model(model, args.model_dir)
+
     # === Training Loop ===
     log_train_loss, log_val_dice, log_val_tre = [], [], []
     best_eval_tre, best_eval_dice = float("inf"), 0.0
     pth_best_tre, pth_best_dice, pth_latest = "", "", ""
 
     for epoch in range(args.epochs):
-        epoch_loss = train_one_epoch(model, train_loader, optimizer, lr_scheduler,  warp_layer, device, args,
+        epoch_loss = train_one_epoch(model, train_loader, optimizer, lr_scheduler, warp_layer, device, args,
                                      writer)
         log_train_loss.append(epoch_loss)
 

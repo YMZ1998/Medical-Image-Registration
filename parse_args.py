@@ -64,7 +64,7 @@ def get_net(args):
             out_channels=args.num_classes,
             blocks_down=(1, 2, 2, 4),
             blocks_up=(1, 1, 1),
-            init_filters=16,
+            init_filters=32,
             dropout_prob=0.1,
         )
     else:

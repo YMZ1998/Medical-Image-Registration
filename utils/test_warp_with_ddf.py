@@ -9,12 +9,10 @@ def warp_image_with_ddf(original_image, ddf_field):
     resampler.SetDefaultPixelValue(-1024)
     resampler.SetTransform(sitk.DisplacementFieldTransform(ddf_field))  # 使用 DDF 变换
 
-    # 执行变形并返回变形后的图像
     moved = resampler.Execute(original_image)
     return moved
 
 def main():
-    # 输入路径
     moving_image_path = "../results/seg_resnet/moving_image.nii.gz"
     ddf_path = "../results/ddf_field.nii.gz"
 
