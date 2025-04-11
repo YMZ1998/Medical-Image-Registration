@@ -1,3 +1,4 @@
+import glob
 import os
 import shutil
 
@@ -21,19 +22,15 @@ def forward(fixed_image, moving_image, moving_label, fixed_keypoints, model, war
     """
     batch_size = fixed_image.shape[0]
 
-    # predict DDF through LocalNet
     ddf_image = model(torch.cat((moving_image, fixed_image), dim=1)).float()
 
-    # warp moving image and label with the predicted ddf
     pred_image = warp_layer(moving_image, ddf_image)
 
-    # warp moving label (optional)
     if moving_label is not None:
         pred_label = warp_layer(moving_label, ddf_image)
     else:
         pred_label = None
 
-    # warp vectors for keypoints (optional)
     if fixed_keypoints is not None:
         with torch.no_grad():
             offset = torch.as_tensor(fixed_image.shape[-3:]).to(fixed_keypoints.device) / 2
@@ -84,9 +81,6 @@ def collate_fn(batch):
 
 
 def tre(fixed, moving, vx=None):
-    """
-    Computes target registration error (TRE) loss for keypoint matching.
-    """
     if vx is None:
         return ((fixed - moving) ** 2).sum(-1).sqrt().nanmean()
     else:
@@ -127,6 +121,16 @@ def loss_fun(
 
 def to_numpy(tensor):
     return tensor.detach().cpu().numpy()
+
+
+def load_best_model(model, model_dir):
+    best_model_files = glob.glob(os.path.join(model_dir, "*_kpt_loss_best_tre*"))
+    if not best_model_files:
+        raise FileNotFoundError("No best model checkpoint found.")
+    checkpoint_path = best_model_files[0]
+    print(f"Loading weights from: {checkpoint_path}")
+    model.load_state_dict(torch.load(checkpoint_path, map_location="cpu"), strict=False)
+    return model
 
 
 def plot_training_logs(logs, titles, save_path=None, figsize=(15, 5)):

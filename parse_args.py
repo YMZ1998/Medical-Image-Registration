@@ -2,7 +2,7 @@ import argparse
 import os
 
 import torch
-from monai.networks.nets import DynUNet, UNet, UNETR, SwinUNETR, SegResNet, VoxelMorph
+from monai.networks.nets import DynUNet, UNet, UNETR, SwinUNETR, SegResNet
 
 
 def get_device():

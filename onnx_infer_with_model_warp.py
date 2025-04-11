@@ -7,36 +7,13 @@ import SimpleITK as sitk
 import numpy as np
 import onnxruntime as ort
 import torch
-from monai.transforms import Compose, LoadImage, Resize, ToTensor, ScaleIntensityRange
 from monai.utils import set_determinism
 
 from parse_args import parse_args
 from utils.dataset import get_test_files
-from utils.utils import remove_and_create_dir
+from utils.infer_transforms import load_image
+from utils.process_image import save_array_as_nii
 from utils.visualization import visualize_one_case
-
-
-def get_transforms(spatial_size, normalize=True):
-    transforms = [
-        LoadImage(image_only=True, ensure_channel_first=True),
-        Resize(spatial_size, mode="trilinear", align_corners=True),
-        ToTensor()
-    ]
-    if normalize:
-        transforms.insert(1, ScaleIntensityRange(a_min=-1200, a_max=400, b_min=0.0, b_max=1.0, clip=True))
-    return Compose(transforms)
-
-
-def load_image(image_path, spatial_size, normalize=True):
-    return get_transforms(spatial_size, normalize)(image_path).unsqueeze(0)
-
-
-def save_array_as_nii(array, file_path, reference=None):
-    sitk_image = sitk.GetImageFromArray(array)
-    sitk_image = sitk.Cast(sitk_image, sitk.sitkInt16)
-    if reference is not None:
-        sitk_image.CopyInformation(reference)
-    sitk.WriteImage(sitk_image, file_path)
 
 
 def predict_single_onnx():
@@ -83,16 +60,12 @@ def predict_single_onnx():
     # Save results
     print("Saving results...")
     save_dir = os.path.join("results", args.arch)
-    # remove_and_create_dir(save_dir)
 
     pred_array = moved[0].cpu().numpy()[0].transpose(2, 1, 0)
-    if args.full_res_training:
-        save_array_as_nii(pred_array, os.path.join(save_dir, "pred_image.nii.gz"), reference=sitk.ReadImage(fixed_path))
-        shutil.copy(fixed_path, os.path.join(save_dir, "fixed_image.nii.gz"))
-        shutil.copy(moving_path, os.path.join(save_dir, "moving_image.nii.gz"))
-    else:
-        pred_itk = sitk.Cast(sitk.GetImageFromArray(pred_array), sitk.sitkFloat32)
-        sitk.WriteImage(pred_itk, os.path.join(save_dir, "pred_image.nii.gz"))
+    save_array_as_nii(pred_array, os.path.join(save_dir, "pred_image.nii.gz"), reference=sitk.ReadImage(fixed_path))
+    shutil.copy(fixed_path, os.path.join(save_dir, "fixed_image.nii.gz"))
+    shutil.copy(moving_path, os.path.join(save_dir, "moving_image.nii.gz"))
+
 
     print("ONNX inference done!")
 

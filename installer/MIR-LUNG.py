@@ -36,10 +36,6 @@ def load_image(image_path: str, spatial_size: tuple, normalize: bool = True) -> 
 
 
 def resample_image(image: sitk.Image, target_size: tuple) -> sitk.Image:
-    """
-    Resample a 3D image to the target size using linear interpolation.
-    This version does not reverse the dimensions.
-    """
     original_size = np.array(image.GetSize())
     target_size = np.array(target_size)
     original_spacing = np.array(image.GetSpacing())

@@ -77,7 +77,6 @@ def train():
     )
 
     # === Evaluation and Visualization ===
-    set_determinism(seed=1)
     check_loader = DataLoader(val_ds, batch_size=1, shuffle=True)
     check_data = first(check_loader)
 

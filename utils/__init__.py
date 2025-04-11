@@ -4,7 +4,7 @@ utils 包的初始化文件，统一导出常用的函数和工具模块。
 
 from .dataset import get_files
 from .transforms import get_train_transforms, get_val_transforms
-from .utils import forward, collate_fn,remove_and_create_dir
+from .utils import forward, collate_fn, remove_and_create_dir, to_numpy, load_best_model
 from .visualization import visualize_registration, overlay_img
 
 __all__ = [
@@ -16,4 +16,6 @@ __all__ = [
     "forward",
     "collate_fn",
     "remove_and_create_dir",
+    "to_numpy",
+    "load_best_model",
 ]
