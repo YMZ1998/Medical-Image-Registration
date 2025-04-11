@@ -87,7 +87,7 @@ def parse_args():
     # parser.add_argument("--image_size", default=(96, 96, 96), type=tuple, help="image size")
     parser.add_argument("--num_classes", default=3, type=int)
     # parser.add_argument("--batch_size", default=2, type=int)
-    parser.add_argument("--epochs", default=200, type=int, metavar="N", help="number of total epochs to train")
+    parser.add_argument("--epochs", default=2, type=int, metavar="N", help="number of total epochs to train")
     # parser.add_argument("--device", default="cuda", type=str)
 
     # Mixed precision training parameters

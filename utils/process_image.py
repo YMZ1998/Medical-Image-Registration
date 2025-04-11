@@ -17,9 +17,9 @@ def resample_image(image: sitk.Image, target_size: tuple) -> sitk.Image:
     return resampler.Execute(image)
 
 
-def save_array_as_nii(array, file_path, reference, pixel_type=sitk.sitkInt16):
+def save_array_as_nii(array, file_path, reference):
     sitk_image = sitk.GetImageFromArray(array)
-    sitk_image = sitk.Cast(sitk_image, pixel_type)
+    sitk_image = sitk.Cast(sitk_image,  reference.GetPixelIDValue())
     if reference is not None:
         sitk_image = resample_image(sitk_image, reference.GetSize())
         sitk_image.CopyInformation(reference)

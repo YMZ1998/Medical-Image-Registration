@@ -133,6 +133,10 @@ def load_best_model(model, model_dir):
     return model
 
 
+def to_numpy_list(tensor_list):
+    return [t.detach().cpu().item() if hasattr(t, 'detach') else t for t in tensor_list]
+
+
 def plot_training_logs(logs, titles, save_path=None, figsize=(15, 5)):
     num_plots = len(logs)
     fig, axs = plt.subplots(1, num_plots, figsize=figsize)
@@ -140,7 +144,7 @@ def plot_training_logs(logs, titles, save_path=None, figsize=(15, 5)):
         axs = [axs]
 
     for i in range(num_plots):
-        logs[i] = to_numpy(logs[i])
+        logs[i] = to_numpy_list(logs[i])
 
         axs[i].plot(logs[i])
         axs[i].set_title(titles[i])
