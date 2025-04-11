@@ -1,55 +1,37 @@
-import glob
 import os
 import shutil
 import warnings
-import numpy as np
-import onnxruntime as ort
 from pprint import pprint
 
 import SimpleITK as sitk
+import numpy as np
+import onnxruntime as ort
 import torch
-
-from utils.dataset import get_test_files
-from utils.warp import Warp
-from monai.transforms import (
-    LoadImage, Compose, Resize, ToTensor, ScaleIntensityRange
-)
+from monai.transforms import Compose, LoadImage, Resize, ToTensor, ScaleIntensityRange
 from monai.utils import set_determinism
 
 from parse_args import parse_args
+from utils.dataset import get_test_files
 from utils.utils import remove_and_create_dir
 from utils.visualization import visualize_one_case
 
 
-def get_infer_transforms(spatial_size):
-    return Compose([
-        LoadImage(image_only=True, ensure_channel_first=True),
-        ScaleIntensityRange(a_min=-1200, a_max=400, b_min=0.0, b_max=1.0, clip=True),
-        Resize(spatial_size, mode="trilinear", align_corners=True),
-        ToTensor()
-    ])
-
-
-def get_moving_transforms(spatial_size):
-    return Compose([
+def get_transforms(spatial_size, normalize=True):
+    transforms = [
         LoadImage(image_only=True, ensure_channel_first=True),
         Resize(spatial_size, mode="trilinear", align_corners=True),
         ToTensor()
-    ])
+    ]
+    if normalize:
+        transforms.insert(1, ScaleIntensityRange(a_min=-1200, a_max=400, b_min=0.0, b_max=1.0, clip=True))
+    return Compose(transforms)
 
 
-def load_and_preprocess(image_path, spatial_size):
-    transforms = get_infer_transforms(spatial_size)
-    return transforms(image_path).unsqueeze(0)
-
-
-def load_moving(image_path, spatial_size):
-    transforms = get_moving_transforms(spatial_size)
-    return transforms(image_path).unsqueeze(0)
+def load_image(image_path, spatial_size, normalize=True):
+    return get_transforms(spatial_size, normalize)(image_path).unsqueeze(0)
 
 
 def save_array_as_nii(array, file_path, reference=None):
-    # array = array * 1600 - 1200
     sitk_image = sitk.GetImageFromArray(array)
     sitk_image = sitk.Cast(sitk_image, sitk.sitkInt16)
     if reference is not None:
@@ -62,60 +44,55 @@ def predict_single_onnx():
     warnings.filterwarnings("ignore")
 
     args = parse_args()
-    target_res = [224, 192, 224] if args.full_res_training else [192, 192, 192]
-    spatial_size = [-1, -1, -1] if args.full_res_training else target_res
+    spatial_size = args.image_size
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # Load image
+    # Load image paths
     test_files = get_test_files(os.path.join(args.data_path, "NLST"))
     case_id = 5
     pprint(test_files[case_id])
-    fixed_image_path = test_files[case_id]["fixed_image"]
-    moving_image_path = test_files[case_id]["moving_image"]
+    fixed_path = test_files[case_id]["fixed_image"]
+    moving_path = test_files[case_id]["moving_image"]
 
-    fixed_image = load_and_preprocess(fixed_image_path, spatial_size)
-    moving_image = load_and_preprocess(moving_image_path, spatial_size)
-    original_moving_image = load_moving(moving_image_path, spatial_size)
+    # Preprocess
+    fixed = load_image(fixed_path, spatial_size)
+    moving = load_image(moving_path, spatial_size)
+    original_moving = load_image(moving_path, spatial_size, normalize=False)
 
-    input_tensor = torch.cat((moving_image, fixed_image, original_moving_image), dim=1).numpy().astype(np.float32)
+    input_tensor = torch.cat((moving, fixed, original_moving), dim=1).numpy().astype(np.float32)
 
-    print(input_tensor.shape)
+    print(f"Input tensor shape: {input_tensor.shape}")
 
     # Load ONNX model
-    onnx_model_path = os.path.join("./results", args.arch, "model_with_warp.onnx")
-    ort_session = ort.InferenceSession(onnx_model_path, providers=["CUDAExecutionProvider", "CPUExecutionProvider"])
+    onnx_path = os.path.join("./results", args.arch, "model_with_warp.onnx")
+    ort_session = ort.InferenceSession(onnx_path, providers=["CUDAExecutionProvider", "CPUExecutionProvider"])
 
     # Inference
     ort_inputs = {"input": input_tensor}
-    ort_outs = ort_session.run(None, ort_inputs)
+    moved_np, ddf_np = ort_session.run(None, ort_inputs)
 
-    moved_image = torch.tensor(ort_outs[0]).to(device)
-    ddf_image = torch.tensor(ort_outs[1]).to(device)
+    moved = torch.tensor(moved_np).to(device)
+    ddf = torch.tensor(ddf_np).to(device)
 
-    print(moved_image.shape, ddf_image.shape)
+    print(f"Moved shape: {moved.shape}, DDF shape: {ddf.shape}")
 
-
-    check_data = {
-        "fixed_image": fixed_image,
-        "moving_image": moving_image,
-    }
+    # Visualize
     print("Visualizing...")
-    visualize_one_case(check_data, moved_image, ddf_image, target_res)
+    visualize_one_case({"fixed_image": fixed, "moving_image": moving}, moved, ddf)
 
+    # Save results
     print("Saving results...")
     save_dir = os.path.join("results", args.arch)
-    remove_and_create_dir(save_dir)
+    # remove_and_create_dir(save_dir)
 
-    pred_image_array = moved_image[0].cpu().numpy()[0].transpose(2, 1, 0)
+    pred_array = moved[0].cpu().numpy()[0].transpose(2, 1, 0)
     if args.full_res_training:
-        save_array_as_nii(pred_image_array, os.path.join(save_dir, "pred_image.nii.gz"),
-                          reference=sitk.ReadImage(fixed_image_path))
-
-        shutil.copy(fixed_image_path, os.path.join(save_dir, "fixed_image.nii.gz"))
-        shutil.copy(moving_image_path, os.path.join(save_dir, "moving_image.nii.gz"))
+        save_array_as_nii(pred_array, os.path.join(save_dir, "pred_image.nii.gz"), reference=sitk.ReadImage(fixed_path))
+        shutil.copy(fixed_path, os.path.join(save_dir, "fixed_image.nii.gz"))
+        shutil.copy(moving_path, os.path.join(save_dir, "moving_image.nii.gz"))
     else:
-        pred_image_itk = sitk.Cast(sitk.GetImageFromArray(pred_image_array), sitk.sitkFloat32)
-        sitk.WriteImage(pred_image_itk, os.path.join(save_dir, "pred_image.nii.gz"))
+        pred_itk = sitk.Cast(sitk.GetImageFromArray(pred_array), sitk.sitkFloat32)
+        sitk.WriteImage(pred_itk, os.path.join(save_dir, "pred_image.nii.gz"))
 
     print("ONNX inference done!")
 

@@ -59,7 +59,7 @@ def visualize_registration(check_data, pred_image, pred_label, ddf_keypoints, ta
         plt.show()
 
 
-def visualize_one_case(check_data, pred_image, phi, target_res):
+def visualize_one_case(check_data, pred_image, phi):
     def prep_slice(vol):
         return vol[0][0].permute(1, 0, 2).cpu()
 

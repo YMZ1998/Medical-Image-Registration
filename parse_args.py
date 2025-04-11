@@ -2,7 +2,7 @@ import argparse
 import os
 
 import torch
-from monai.networks.nets import DynUNet, UNet, UNETR, SwinUNETR, SegResNet
+from monai.networks.nets import DynUNet, UNet, UNETR, SwinUNETR, SegResNet, VoxelMorph
 
 
 def get_device():
@@ -65,7 +65,7 @@ def get_net(args):
             blocks_down=(1, 2, 2, 4),
             blocks_up=(1, 1, 1),
             init_filters=16,
-            dropout_prob=0.2,
+            dropout_prob=0.1,
         )
     else:
         raise ValueError(f"model_name {args.model_name} not supported")
@@ -112,7 +112,7 @@ if __name__ == '__main__':
     from torchsummary import summary
 
     args = parse_args()
-    args.arch = 'dynunet'
+    # args.arch = 'dynunet'
     # args.image_size = (256, 256, 32)
 
     model = get_net(args)

@@ -102,7 +102,7 @@ def predict_single_onnx():
         "moving_image": moving_image,
     }
     print("Visualizing...")
-    visualize_one_case(check_data, original_pred_image, ddf_image, target_res)
+    visualize_one_case(check_data, original_pred_image, ddf_image)
 
     print("Saving results...")
     save_dir = os.path.join("results", args.arch)

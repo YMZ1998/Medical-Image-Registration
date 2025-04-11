@@ -107,11 +107,11 @@ def predict_single():
         "moving_image": moving_image,
     }
     print("Visualizing...")
-    visualize_one_case(check_data, original_pred_image, ddf_image, target_res)
+    visualize_one_case(check_data, original_pred_image, ddf_image)
 
     print("Saving results...")
     save_dir = os.path.join("results", args.arch)
-    remove_and_create_dir(save_dir)
+    # remove_and_create_dir(save_dir)
 
     pred_image_array = pred_image[0].cpu().numpy()[0].transpose(2, 1, 0)
     if args.full_res_training:
