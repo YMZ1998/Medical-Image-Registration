@@ -8,7 +8,7 @@ from tqdm import tqdm
 from utils.utils import tre, forward, loss_fun
 
 
-def train_one_epoch(model, train_loader, optimizer, lr_scheduler,  warp_layer, device, args, writer=None):
+def train_one_epoch(model, train_loader, optimizer, lr_scheduler, warp_layer, device, args, writer=None):
     """
     Train the model for one epoch.
 
@@ -27,9 +27,9 @@ def train_one_epoch(model, train_loader, optimizer, lr_scheduler,  warp_layer, d
     - epoch_loss: Average loss for the epoch.
     """
     # loss weights (set to zero to disable loss term)
-    lam_t = 0.7  # TRE  (keypoint loss)
-    lam_l = 0.15  # Dice (mask overlay)
-    lam_m = 0.1  # MSE (image similarity)
+    lam_t = 0.8  # TRE  (keypoint loss)
+    lam_l = 0.1  # Dice (mask overlay)
+    lam_m = 0.05  # MSE (image similarity)
     lam_r = 0.05  # Bending loss (smoothness of the DDF)
     scaler = torch.cuda.amp.GradScaler() if args.amp else None
 
