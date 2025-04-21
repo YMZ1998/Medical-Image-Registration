@@ -29,7 +29,7 @@ def visualize_registration(check_data, pred_image, pred_label, ddf_keypoints, ta
 
     # slice_idx = int(target_res[0] * 95.0 / 224)  # Slice equivalent to 95 in 224-depth
     for slice_idx in range(10, target_res[0] - 10, 10):
-        fig, axs = plt.subplots(2, 2)
+        fig, axs = plt.subplots(2, 2, figsize=(8, 8))
         overlay_img(fixed_image, moving_image, slice_idx, axs[0, 0], "Before registration")
         overlay_img(fixed_image, pred_image, slice_idx, axs[0, 1], "After registration")
         overlay_img(fixed_label, moving_label, slice_idx, axs[1, 0])
@@ -45,7 +45,7 @@ def visualize_registration(check_data, pred_image, pred_label, ddf_keypoints, ta
         moving_kp = check_data["moving_keypoints"][0].cpu()
         moved_kp = fixed_kp + ddf_keypoints[0].cpu()
 
-        fig = plt.figure()
+        fig = plt.figure(figsize=(8, 4))
         for i, title, fkp in zip(
             [1, 2], ["Before registration", "After registration"], [fixed_kp, moved_kp]
         ):

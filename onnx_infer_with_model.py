@@ -22,8 +22,7 @@ def predict_single_onnx():
     warnings.filterwarnings("ignore")
 
     args = parse_args()
-    target_res = args.image_size
-    spatial_size = [-1, -1, -1] if args.full_res_training else target_res
+    spatial_size = [-1, -1, -1] if args.full_res_training else args.image_size
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Load image

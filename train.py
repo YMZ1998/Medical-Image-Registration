@@ -30,16 +30,15 @@ def train():
     print(len(train_files), len(val_files))
 
     # === Resolution Config ===
-    target_res = args.image_size
-    spatial_size = [-1, -1, -1] if args.full_res_training else target_res
-    vx = torch.tensor(np.array([1.5, 1.5, 1.5]) / (np.array(target_res) / np.array([224, 192, 224]))).to(device)
+    spatial_size = [-1, -1, -1] if args.full_res_training else args.image_size
+    vx = torch.tensor(np.array([1.5, 1.5, 1.5]) / (np.array(args.image_size) / np.array([224, 192, 224]))).to(device)
 
     # === Logging and Saving Paths ===
     print(f'tensorboard --logdir="./models/nlst/{args.arch}"')
     writer = SummaryWriter(log_dir=args.model_dir) if args.tensorboard else None
 
     # === Datasets and Loaders ===
-    train_ds = Dataset(train_files, transform=get_train_transforms(spatial_size, target_res))
+    train_ds = Dataset(train_files, transform=get_train_transforms(spatial_size, args.image_size))
     val_ds = Dataset(val_files, transform=get_val_transforms(spatial_size))
     train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=4, collate_fn=collate_fn)
     val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=4, collate_fn=collate_fn)
@@ -97,7 +96,7 @@ def train():
             )
 
     # Visualization
-    visualize_registration(check_data, pred_image, pred_label, ddf_keypoints, target_res)
+    visualize_registration(check_data, pred_image, pred_label, ddf_keypoints, args.image_size)
 
 
 if __name__ == "__main__":

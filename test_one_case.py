@@ -1,4 +1,3 @@
-import glob
 import os
 import shutil
 import warnings
@@ -14,8 +13,10 @@ from utils.dataset import get_test_files
 from utils.infer_transforms import load_image
 from utils.process_image import save_array_as_nii
 from utils.visualization import visualize_one_case
-# from monai.networks.blocks import Warp
-from utils.warp import Warp
+from monai.networks.blocks import Warp
+
+
+# from utils.warp import Warp
 
 
 def predict_single():
@@ -24,8 +25,7 @@ def predict_single():
     warnings.filterwarnings("ignore")
 
     args = parse_args()
-    target_res = [224, 192, 224] if args.full_res_training else [192, 192, 192]
-    spatial_size = [-1, -1, -1] if args.full_res_training else target_res
+    spatial_size = [-1, -1, -1] if args.full_res_training else args.image_size
 
     test_files = get_test_files(os.path.join(args.data_path, "NLST"))
 
@@ -57,7 +57,7 @@ def predict_single():
             original_moving_image = original_moving_image.to(device)
             ddf_image = model(torch.cat((moving_image, fixed_image), dim=1)).float()
             # warp moving image and label with the predicted ddf
-            pred_image = warp_layer(moving_image, ddf_image)
+            # pred_image = warp_layer(moving_image, ddf_image)
             original_pred_image = warp_layer(original_moving_image, ddf_image)
 
     check_data = {
@@ -69,8 +69,9 @@ def predict_single():
 
     print("Saving results...")
     save_dir = os.path.join("results", args.arch)
+    print("Saving results to: ", save_dir)
 
-    pred_image_array = pred_image[0].cpu().numpy()[0].transpose(2, 1, 0)
+    pred_image_array = original_pred_image[0].cpu().numpy()[0].transpose(2, 1, 0)
     save_array_as_nii(pred_image_array, os.path.join(save_dir, "pred_image.nii.gz"),
                       reference=sitk.ReadImage(fixed_image_path))
 

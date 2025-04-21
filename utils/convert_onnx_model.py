@@ -7,7 +7,7 @@ import onnxruntime
 import torch
 
 from parse_args import parse_args, get_net
-from utils import to_numpy, load_best_model
+from utils.utils import to_numpy, load_best_model
 
 
 def export_to_onnx(model, input_shape, save_path="model.onnx", device="cuda"):

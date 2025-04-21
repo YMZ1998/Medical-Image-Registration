@@ -26,7 +26,7 @@ def get_files(data_dir):
     with open(data_json, "r") as f:
         data = json.load(f)
     train_files = [build_file_entry(data_dir, pair) for pair in data["training_paired_images"]]
-    val_files = [build_file_entry(data_dir, pair)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           for pair in data["registration_val"]]
+    val_files = [build_file_entry(data_dir, pair) for pair in data["registration_val"]]
 
     return train_files, val_files
 
@@ -110,6 +110,3 @@ if __name__ == "__main__":
     spatial_size = [-1, -1, -1] if full_res_training else target_res
 
     visualize_check_sample(train_files, spatial_size, target_res)
-
-
-

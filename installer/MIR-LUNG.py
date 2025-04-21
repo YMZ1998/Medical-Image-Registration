@@ -3,8 +3,8 @@ import os
 import shutil
 import warnings
 
-import numpy as np
 import SimpleITK as sitk
+import numpy as np
 import onnxruntime as ort
 
 
@@ -78,11 +78,11 @@ def val_onnx(args) -> None:
 
     print(f"Moved output shape: {moved_np.shape}, DDF shape: {ddf_np.shape}")
 
-    # print("Visualizing results...")
-    # from utils.visualization_numpy import visualize_one_case
-    # visualize_one_case({"fixed_image": fixed, "moving_image": moving}, moved_np, ddf_np)
+    print("Visualizing results...")
+    from utils.visualization_numpy import visualize_one_case
+    visualize_one_case({"fixed_image": fixed, "moving_image": moving}, moved_np, ddf_np)
 
-    print("Saving results to disk...")
+    print("Saving results...")
     remove_and_create_dir(args.result_path)
 
     pred_array = moved_np[0, 0]

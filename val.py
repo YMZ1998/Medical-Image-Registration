@@ -27,8 +27,7 @@ def val():
     train_files, val_files = get_files(os.path.join(args.data_path, "NLST"))
 
     # Resolution setup
-    target_res = [224, 192, 224] if args.full_res_training else [192, 192, 192]
-    spatial_size = [-1, -1, -1] if args.full_res_training else target_res
+    spatial_size = [-1, -1, -1] if args.full_res_training else args.image_size
 
     val_transforms = get_val_transforms(spatial_size)
 
@@ -42,7 +41,7 @@ def val():
 
     # Validation sample
     set_determinism(seed=1)
-    check_loader = DataLoader(Dataset(data=val_files, transform=val_transforms), batch_size=1, shuffle=True)
+    check_loader = DataLoader(Dataset(data=val_files[2:], transform=val_transforms), batch_size=1, shuffle=True)
     check_data = first(check_loader)
 
     # Inference
@@ -86,7 +85,7 @@ def val():
         torch.save(check_data["moving_label"][0].cpu(), os.path.join(save_dir, "moving_label.pt"))
 
     # Visualization
-    visualize_registration(check_data, pred_image, pred_label, ddf_keypoints, target_res)
+    visualize_registration(check_data, pred_image, pred_label, ddf_keypoints, args.image_size)
 
 
 if __name__ == "__main__":

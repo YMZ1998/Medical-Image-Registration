@@ -1,19 +1,12 @@
 import glob
 import os
-import shutil
 
+import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
 from monai.data.utils import list_data_collate
 from monai.losses import BendingEnergyLoss, DiceLoss
 from torch.nn import MSELoss
-import matplotlib.pyplot as plt
-
-
-def remove_and_create_dir(path):
-    if os.path.exists(path):
-        shutil.rmtree(path)
-    os.makedirs(path, exist_ok=True)
 
 
 def forward(fixed_image, moving_image, moving_label, fixed_keypoints, model, warp_layer):

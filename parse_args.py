@@ -10,6 +10,17 @@ def get_device():
     print("using {} device.".format(device))
     return device
 
+def gpu_usage(device=0):
+    allocated = torch.cuda.memory_allocated(device) / 1024**3  # GB
+    max_allocated = torch.cuda.max_memory_allocated(device) / 1024**3  # GB
+    reserved = torch.cuda.memory_reserved(device) / 1024**3  # GB
+    total = torch.cuda.get_device_properties(device).total_memory / 1024**3  # GB
+
+    print(f'GPU {device} usage:')
+    print(f'Allocated (current/max): {allocated:.2f} / {max_allocated:.2f} GB')
+    print(f'Reserved: {reserved:.2f} GB')
+    print(f'Total:    {total:.2f} GB')
+
 
 def get_net(args):
     print('★' * 30)
@@ -17,7 +28,6 @@ def get_net(args):
           f'epoch:{args.epochs}\n'
           f'image size:{args.image_size}')
     print('★' * 30)
-
     if args.arch == "dynunet":
         net = DynUNet(
             spatial_dims=3,
@@ -96,7 +106,7 @@ def parse_args():
     args = parser.parse_args()
 
     args.image_size = [224, 192, 224] if args.full_res_training else [192, 192, 192]
-    args.batch_size = 1 if args.full_res_training else 4
+    # args.batch_size = 1 if args.full_res_training else 4
 
     args.model_dir = os.path.join(os.getcwd(), "models", "nlst", args.arch)
     os.makedirs(args.model_dir, exist_ok=True)

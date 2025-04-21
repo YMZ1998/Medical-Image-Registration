@@ -21,7 +21,6 @@ def predict_single_onnx():
     warnings.filterwarnings("ignore")
 
     args = parse_args()
-    spatial_size = args.image_size
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Load image paths
@@ -32,9 +31,9 @@ def predict_single_onnx():
     moving_path = test_files[case_id]["moving_image"]
 
     # Preprocess
-    fixed = load_image(fixed_path, spatial_size)
-    moving = load_image(moving_path, spatial_size)
-    original_moving = load_image(moving_path, spatial_size, normalize=False)
+    fixed = load_image(fixed_path, args.image_size)
+    moving = load_image(moving_path, args.image_size)
+    original_moving = load_image(moving_path, args.image_size, normalize=False)
 
     input_tensor = torch.cat((moving, fixed, original_moving), dim=1).numpy().astype(np.float32)
 
