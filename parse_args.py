@@ -37,6 +37,7 @@ def get_net(args):
             strides=[[1, 1, 1], [2, 2, 2], [2, 2, 2]],
             upsample_kernel_size=[[2, 2, 2], [2, 2, 2]],
             dropout=0.1,
+            norm_name="BATCH",
         )
     elif args.arch == "unet":
         net = UNet(
@@ -76,6 +77,7 @@ def get_net(args):
             blocks_up=(1, 1, 1),
             init_filters=16,
             dropout_prob=0.1,
+            norm="BATCH",
         )
     else:
         raise ValueError(f"model_name {args.model_name} not supported")
