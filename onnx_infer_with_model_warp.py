@@ -41,7 +41,7 @@ def predict_single_onnx():
 
     # Load ONNX model
     onnx_path = os.path.join("./results", args.arch, "model_with_warp.onnx")
-    ort_session = ort.InferenceSession(onnx_path, providers=["CUDAExecutionProvider", "CPUExecutionProvider"])
+    ort_session = ort.InferenceSession(onnx_path, providers=["CPUExecutionProvider"])
 
     # Inference
     ort_inputs = {"input": input_tensor}

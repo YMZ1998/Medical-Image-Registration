@@ -89,4 +89,9 @@ def val():
 
 
 if __name__ == "__main__":
+    import datetime
+    import time
+
+    start = time.time()
     val()
+    print("Consume time:", str(datetime.timedelta(seconds=int(time.time() - start))))

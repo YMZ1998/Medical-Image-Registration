@@ -100,4 +100,9 @@ def train():
 
 
 if __name__ == "__main__":
+    import datetime
+    import time
+
+    start = time.time()
     train()
+    print("Consume time:", str(datetime.timedelta(seconds=int(time.time() - start))))

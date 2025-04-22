@@ -14,17 +14,16 @@ def remove_and_create_dir(path):
     os.makedirs(path, exist_ok=True)
 
 
-def load_image(image_path: str, spatial_size: tuple, normalize: bool = True) -> np.ndarray:
+def load_image(image_path, spatial_size, normalize=True):
     image = sitk.ReadImage(image_path)
-    array = sitk.GetArrayFromImage(image).astype(np.float32)  # shape: (D, H, W)
+    array = sitk.GetArrayFromImage(image).astype(np.float32)
 
     if normalize:
         min_v = -1200
         max_v = 400
         array = np.clip(array, min_v, max_v)
-        array = (array - min_v) / (max_v - min_v)  # scale to [0, 1]
+        array = (array - min_v) / (max_v - min_v)
 
-    # Resize to spatial_size using sitk
     image = sitk.GetImageFromArray(array)
     image = resample_image(image, spatial_size)
     array = sitk.GetArrayFromImage(image)  # (D, H, W)
@@ -32,7 +31,7 @@ def load_image(image_path: str, spatial_size: tuple, normalize: bool = True) -> 
     return np.expand_dims(array, axis=0)  # shape: (1, D, H, W)
 
 
-def resample_image(image: sitk.Image, target_size: tuple) -> sitk.Image:
+def resample_image(image, target_size):
     original_size = np.array(image.GetSize())
     target_size = np.array(target_size)
     original_spacing = np.array(image.GetSpacing())
@@ -56,7 +55,7 @@ def save_array_as_nii(array, file_path, reference):
     sitk.WriteImage(sitk_image, file_path)
 
 
-def val_onnx(args) -> None:
+def val_onnx(args):
     warnings.filterwarnings("ignore")
 
     print("Loading and preprocessing images...")
@@ -70,7 +69,7 @@ def val_onnx(args) -> None:
     print(f"Input tensor shape: {input_tensor.shape}")
 
     print("Loading ONNX model...")
-    ort_session = ort.InferenceSession(args.onnx_path, providers=["CUDAExecutionProvider", "CPUExecutionProvider"])
+    ort_session = ort.InferenceSession(args.onnx_path, providers=["CPUExecutionProvider"])
 
     print("Running inference...")
     ort_inputs = {"input": input_tensor}
@@ -78,9 +77,9 @@ def val_onnx(args) -> None:
 
     print(f"Moved output shape: {moved_np.shape}, DDF shape: {ddf_np.shape}")
 
-    print("Visualizing results...")
-    from utils.visualization_numpy import visualize_one_case
-    visualize_one_case({"fixed_image": fixed, "moving_image": moving}, moved_np, ddf_np)
+    # print("Visualizing results...")
+    # from utils.visualization_numpy import visualize_one_case
+    # visualize_one_case({"fixed_image": fixed, "moving_image": moving}, moved_np, ddf_np)
 
     print("Saving results...")
     remove_and_create_dir(args.result_path)
@@ -104,4 +103,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     print("Arguments:", args)
 
+    import datetime
+    import time
+
+    start = time.time()
     val_onnx(args)
+    print("Consume time:", str(datetime.timedelta(seconds=int(time.time() - start))))
