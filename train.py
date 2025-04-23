@@ -56,10 +56,14 @@ def train():
     log_train_loss, log_val_dice, log_val_tre = [], [], []
     best_eval_tre, best_eval_dice = float("inf"), 0.0
     pth_best_tre, pth_best_dice, pth_latest = "", "", ""
+    lr = args.lr
 
-    for epoch in range(args.epochs):
-        epoch_loss = train_one_epoch(model, train_loader, optimizer, lr_scheduler, warp_layer, device, args,
-                                     writer)
+    for epoch in range(1, args.epochs + 1):
+        print('-' * 20)
+        print('Epoch {}/{} lr {:.6f}'.format(epoch, args.epochs, lr))
+        print('-' * 20)
+        epoch_loss, lr = train_one_epoch(model, train_loader, optimizer, lr_scheduler, warp_layer, device, args,
+                                         writer)
         log_train_loss.append(epoch_loss)
 
         tre_after, dice_after = evaluate_model(model, warp_layer, val_loader, device, args, vx, writer)

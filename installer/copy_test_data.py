@@ -6,15 +6,14 @@ from utils.dir_process import remove_and_create_dir
 from utils.dataset import get_test_files
 
 
-def copy_test_data():
+def copy_test_data(save_dir):
     test_files = get_test_files(os.path.join('../data', "NLST"))
     print(len(test_files))
-    case_id = 8
+    case_id = 7
     pprint(test_files[case_id])
     fixed_path = test_files[case_id]["fixed_image"]
     moving_path = test_files[case_id]["moving_image"]
 
-    save_dir = './data'
     remove_and_create_dir(save_dir)
     shutil.copy(fixed_path, os.path.join(save_dir, "fixed.nii.gz"))
     shutil.copy(moving_path, os.path.join(save_dir, "moving.nii.gz"))
@@ -22,4 +21,8 @@ def copy_test_data():
 
 
 if __name__ == "__main__":
-    copy_test_data()
+    save_dir = './data'
+    save_dir2 = './dist/data'
+
+    copy_test_data(save_dir)
+    copy_test_data(save_dir2)

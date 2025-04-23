@@ -1,4 +1,3 @@
-import glob
 import os
 import warnings
 
@@ -76,7 +75,7 @@ def val():
     sitk.WriteImage(pred_image_itk, os.path.join(save_dir, "pred_image.nii.gz"))
     sitk.WriteImage(pred_label_itk, os.path.join(save_dir, "pred_label.nii.gz"))
 
-    save_pt=False
+    save_pt = False
     if save_pt:
         torch.save(ddf_image[0].cpu(), os.path.join(save_dir, "ddf_image.pt"))
         torch.save(ddf_keypoints[0].cpu(), os.path.join(save_dir, "ddf_keypoints.pt"))

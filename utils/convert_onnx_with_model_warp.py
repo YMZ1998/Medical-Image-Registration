@@ -12,9 +12,6 @@ from parse_args import parse_args, get_net
 from utils import load_best_model, to_numpy
 
 
-# from warp import Warp
-
-
 class ModelWithWarp(nn.Module):
     def __init__(self, model):
         super().__init__()
@@ -72,6 +69,7 @@ def export_to_onnx(model, input_shapes, save_path="model.onnx", device="cuda"):
 
 def main():
     warnings.filterwarnings("ignore")
+
     args = parse_args()
     device = args.device
 

@@ -21,7 +21,7 @@ def predict_single_onnx():
     warnings.filterwarnings("ignore")
 
     args = parse_args()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = args.device
 
     # Load image paths
     test_files = get_test_files(os.path.join(args.data_path, "NLST"))

@@ -14,15 +14,18 @@ def remove_and_create_dir(path):
     os.makedirs(path, exist_ok=True)
 
 
+def normalize_image(array, min_v, max_v):
+    array = np.clip(array, min_v, max_v)
+    array = (array - min_v) / (max_v - min_v)
+    return array
+
+
 def load_image(image_path, spatial_size, normalize=True):
     image = sitk.ReadImage(image_path)
     array = sitk.GetArrayFromImage(image).astype(np.float32)
 
     if normalize:
-        min_v = -1200
-        max_v = 400
-        array = np.clip(array, min_v, max_v)
-        array = (array - min_v) / (max_v - min_v)
+        array = normalize_image(array, -1200, 400)
 
     image = sitk.GetImageFromArray(array)
     image = resample_image(image, spatial_size)

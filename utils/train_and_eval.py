@@ -27,10 +27,10 @@ def train_one_epoch(model, train_loader, optimizer, lr_scheduler, warp_layer, de
     - epoch_loss: Average loss for the epoch.
     """
     # loss weights (set to zero to disable loss term)
-    lam_t = 0.8  # TRE  (keypoint loss)
+    lam_t = 0.7  # TRE  (keypoint loss)
     lam_l = 0.1  # Dice (mask overlay)
-    lam_m = 0.05  # MSE (image similarity)
-    lam_r = 0.05  # Bending loss (smoothness of the DDF)
+    lam_m = 0.1  # MSE (image similarity)
+    lam_r = 0.1  # Bending loss (smoothness of the DDF)
     scaler = torch.cuda.amp.GradScaler() if args.amp else None
 
     t0_train = time.time()
@@ -82,8 +82,8 @@ def train_one_epoch(model, train_loader, optimizer, lr_scheduler, warp_layer, de
         f"TRE Before={tre_before / n_steps:.3f}, TRE After={tre_after / n_steps:.3f}, "
         f"Elapsed time: {time.time() - t0_train:.2f} sec."
     )
-
-    return epoch_loss
+    lr = optimizer.param_groups[0]["lr"]
+    return epoch_loss, lr
 
 
 def evaluate_model(model, warp_layer, val_loader, device, args, vx, writer=None):

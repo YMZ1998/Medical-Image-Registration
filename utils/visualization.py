@@ -28,7 +28,7 @@ def visualize_registration(check_data, pred_image, pred_label, ddf_keypoints, ta
     pred_label = pred_label[0][0].permute(1, 0, 2).cpu()
 
     # slice_idx = int(target_res[0] * 95.0 / 224)  # Slice equivalent to 95 in 224-depth
-    for slice_idx in range(10, target_res[0] - 10, 10):
+    for slice_idx in range(10, target_res[0] - 10, 20):
         fig, axs = plt.subplots(2, 2, figsize=(8, 8))
         overlay_img(fixed_image, moving_image, slice_idx, axs[0, 0], "Before registration")
         overlay_img(fixed_image, pred_image, slice_idx, axs[0, 1], "After registration")

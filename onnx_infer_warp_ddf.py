@@ -73,7 +73,6 @@ def predict_single_onnx():
 
     args = parse_args()
     spatial_size = [-1, -1, -1] if args.full_res_training else args.image_size
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Load image
     test_files = get_test_files(os.path.join(args.data_path, "NLST"))
@@ -96,7 +95,7 @@ def predict_single_onnx():
     # Inference
     ort_inputs = {"input": input_tensor}
     ort_outs = ort_session.run(None, ort_inputs)
-    ddf_image = torch.tensor(ort_outs[0]).to(device)
+    ddf_image = torch.tensor(ort_outs[0]).to(args.device)
 
     # Warp using SimpleITK instead of the PyTorch warp layer
     # Load fixed image (reference)

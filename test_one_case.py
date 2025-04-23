@@ -8,15 +8,12 @@ import torch
 from monai.utils import set_determinism
 
 from parse_args import parse_args, get_net
-from utils import load_best_model
+from utils.utils import load_best_model
 from utils.dataset import get_test_files
 from utils.infer_transforms import load_image
 from utils.process_image import save_array_as_nii
 from utils.visualization import visualize_one_case
 from monai.networks.blocks import Warp
-
-
-# from utils.warp import Warp
 
 
 def predict_single():
@@ -29,7 +26,7 @@ def predict_single():
 
     test_files = get_test_files(os.path.join(args.data_path, "NLST"))
 
-    case_id = 5
+    case_id = 6
 
     pprint(test_files[case_id])
     fixed_image_path = test_files[case_id]["fixed_image"]
