@@ -29,6 +29,9 @@ u_AB = sitk_to_numpy_disp(u_AB)
 u_BA = sitk_to_numpy_disp(u_BA)
 # Compose BA ∘ AB, then error to identity
 comp = compose_disp(u_AB, u_BA)  # comp maps A -> A (should be identity)
+comp_image = sitk.GetImageFromArray(comp.astype(np.float32), isVector=True)
+sitk.WriteImage(comp_image, "comp_AB_BA.nii.gz")
+
 # compute error displacement relative to identity (should be near zero)
 err = comp  # because comp = displacement from x to comp(x) = x + err, so err ~ 0
 max_err = np.max(np.abs(err))

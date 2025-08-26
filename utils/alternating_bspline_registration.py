@@ -226,7 +226,7 @@ def alternating_bspline_registration(imageA, imageB,
         disp_AB_new, transform_obj = bspline_register(fixed=imageB, moving=imageA,
                                                       grid_physical_spacing=bspline_spacing,
                                                       metric=metric,
-                                                      num_iterations=150,
+                                                      num_iterations=50,
                                                       verbose=False)
         # Compose cum_AB = cum_AB ∘ new_disp? We interpret disp_AB_new as mapping A -> B directly (index-space)
         # If we had previous cum_AB (mapping A -> B_prev) and new_disp maps A -> B_new, we should combine carefully.
@@ -283,7 +283,7 @@ if __name__ == "__main__":
 
     cum_AB, cum_BA = alternating_bspline_registration(fixed, moving,
                                                       iterations=3,
-                                                      bspline_spacing=(60, 60, 60),
+                                                      bspline_spacing=(30, 30, 30),
                                                       metric='NCC',
                                                       smooth_sigma_after_compose=0.8,
                                                       verbose=True)
