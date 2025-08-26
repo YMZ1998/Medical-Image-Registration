@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 
 # 读入位移场
-disp = sitk.ReadImage(r"C:\Users\DATU\Desktop\validation\deformation_field.nii.gz", sitk.sitkVectorFloat64)
+disp = sitk.ReadImage(r"D:\Data\mir\validation\deformation_field.nii.gz", sitk.sitkVectorFloat64)
 
 # 计算雅可比行列式
 jacobian_det = sitk.DisplacementFieldJacobianDeterminant(disp)

@@ -11,11 +11,11 @@ https://learn2reg.grand-challenge.org/Datasets/
 ### 1. Create and Activate Conda Environment
 
 ```bash
-conda create --name env python=3.9
+conda create --name MIR python=3.9
 ```
 
 ```bash
-conda activate env
+conda activate MIR
 ```
 
 ### 2. Install Required Python Packages
@@ -25,6 +25,7 @@ pip install -i https://pypi.tuna.tsinghua.edu.cn/simple pyinstaller
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple SimpleITK
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple onnxruntime
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple tqdm
+pip install scipy -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 ### 3. Use PyInstaller to Package Python Script

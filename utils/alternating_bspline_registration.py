@@ -206,7 +206,8 @@ def alternating_bspline_registration(imageA, imageB,
     cum_BA = zero_disp.copy()  # displacement that maps B -> A (index-space)
 
     for it in range(iterations):
-        if verbose: print(f"\n=== Alternation iteration {it + 1} (A->B) ===")
+        if verbose:
+            print(f"\n=== Alternation iteration {it + 1} (A->B) ===")
         # Register A to B (but operate on original images, metric becomes measured under current composed transform)
         # We register fixed=B, moving=A deformed by current cum_AB (if non-zero, we avoid resampling: instead register A to B but we could transform A with cum_AB for better initialization)
         # For simplicity, transform moving image by cum_AB once for registration initialization (this is allowed but will re-sample once per alternation; keep small iterations)
@@ -216,14 +217,17 @@ def alternating_bspline_registration(imageA, imageB,
                                         imageA)  # displacement field in index-space -> convert to physical displacement image
             # convert index-space to physical displacements:
             # Create displacement image in physical mm from index-space by multiplying spacing and swapping components
-            disp_phys = sitk.Image(X=imageA.GetSize()[0], y=imageA.GetSize()[1], z=imageA.GetSize()[2],
-                                   pixelID=sitk.sitkVectorFloat64)
+            # disp_phys = sitk.Image(X=imageA.GetSize()[0], y=imageA.GetSize()[1], z=imageA.GetSize()[2],
+            #                        pixelID=sitk.sitkVectorFloat64)
+            size = imageA.GetSize()
+            disp_phys = sitk.Image(size, sitk.sitkVectorFloat64, 3)
+
         # Simpler approach: register original A->B without resampling to keep code robust
         disp_AB_new, transform_obj = bspline_register(fixed=imageB, moving=imageA,
                                                       grid_physical_spacing=bspline_spacing,
                                                       metric=metric,
                                                       num_iterations=150,
-                                                      verbose=verbose)
+                                                      verbose=False)
         # Compose cum_AB = cum_AB ∘ new_disp? We interpret disp_AB_new as mapping A -> B directly (index-space)
         # If we had previous cum_AB (mapping A -> B_prev) and new_disp maps A -> B_new, we should combine carefully.
         # Simpler and safe approach: treat disp_AB_new as incremental (Δ) and compose: cum_AB = compose( cum_AB, disp_increment )
@@ -241,13 +245,14 @@ def alternating_bspline_registration(imageA, imageB,
         if verbose:
             print(f"A->B composed: negative-Jacobian voxels: {int(neg_count)} / {detJ.size}")
 
-        if verbose: print(f"\n=== Alternation iteration {it + 1} (B->A) ===")
+        if verbose:
+            print(f"\n=== Alternation iteration {it + 1} (B->A) ===")
         # Now B->A
         disp_BA_new, transform_obj2 = bspline_register(fixed=imageA, moving=imageB,
                                                        grid_physical_spacing=bspline_spacing,
                                                        metric=metric,
                                                        num_iterations=150,
-                                                       verbose=verbose)
+                                                       verbose=False)
         cum_BA = compose_displacement_indexspace(cum_BA, disp_BA_new)
         for _ in range(max_compose_smooth_iters):
             cum_BA[..., 0] = gaussian_filter(cum_BA[..., 0], sigma=smooth_sigma_after_compose)
@@ -270,8 +275,8 @@ def alternating_bspline_registration(imageA, imageB,
 # ---------- Example usage ----------
 if __name__ == "__main__":
     # replace with your image paths
-    fixed_path = r"C:\Users\DATU\Desktop\validation\fixed.nii.gz"  # B
-    moving_path = r"C:\Users\DATU\Desktop\validation\moving.nii.gz"  # A
+    fixed_path = r"D:\Data\mir\validation\fixed.nii.gz"  # B
+    moving_path = r"D:\Data\mir\validation\moving.nii.gz"  # A
 
     fixed = sitk.ReadImage(fixed_path, sitk.sitkFloat32)
     moving = sitk.ReadImage(moving_path, sitk.sitkFloat32)
@@ -279,7 +284,7 @@ if __name__ == "__main__":
     cum_AB, cum_BA = alternating_bspline_registration(fixed, moving,
                                                       iterations=3,
                                                       bspline_spacing=(60, 60, 60),
-                                                      metric='MI',
+                                                      metric='NCC',
                                                       smooth_sigma_after_compose=0.8,
                                                       verbose=True)
 
