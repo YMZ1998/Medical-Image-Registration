@@ -1,26 +1,8 @@
-import numpy as np
-import matplotlib.pyplot as plt
 import SimpleITK as sitk
-from scipy.ndimage import map_coordinates
+import matplotlib.pyplot as plt
+import numpy as np
 
-
-# -----------------------------
-# compose_disp 函数
-def compose_disp(u1, u2):
-    Z, Y, X, _ = u1.shape
-    zz, yy, xx = np.mgrid[0:Z, 0:Y, 0:X].astype(np.float32)
-    phi_z = zz + u1[..., 0]
-    phi_y = yy + u1[..., 1]
-    phi_x = xx + u1[..., 2]
-    coords = [phi_z, phi_y, phi_x]
-    u2z = map_coordinates(u2[..., 0], coords, order=3, mode='nearest')
-    u2y = map_coordinates(u2[..., 1], coords, order=3, mode='nearest')
-    u2x = map_coordinates(u2[..., 2], coords, order=3, mode='nearest')
-    comp = np.stack([u1[..., 0] + u2z,
-                     u1[..., 1] + u2y,
-                     u1[..., 2] + u2x], axis=-1)
-    return comp
-
+from compose_disp import compose_disp
 
 # -----------------------------
 # 1) 生成模拟位移场
@@ -30,11 +12,13 @@ u_BA = np.zeros((Z, Y, X, 3), dtype=np.float32)
 
 zz, yy, xx = np.mgrid[0:Z, 0:Y, 0:X].astype(np.float32)
 # 平滑小位移
-dx=0.5
-u_AB[..., 0] = dx * np.sin(2 * np.pi * yy / Y)
+dx = 0.5
+u_AB[..., 0] = dx * np.sin(1. * np.pi * yy / Y)
 u_AB[..., 1] = dx * np.sin(2 * np.pi * xx / X)
 u_AB[..., 2] = dx * np.sin(2 * np.pi * zz / Z)
 u_BA = -u_AB  # 反向
+print("u_AB.max =", u_AB.max())
+print("u_BA.max =", u_BA.max())
 
 # 保存为 NIfTI
 sitk.WriteImage(sitk.GetImageFromArray(u_AB, isVector=True), "sim_u_AB.nii.gz")

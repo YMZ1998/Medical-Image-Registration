@@ -4,9 +4,15 @@ from matplotlib.widgets import Slider
 
 # -----------------------------
 # 读取位移场
-disp1 = sitk.ReadImage("sim_u_AB.nii.gz", sitk.sitkVectorFloat64)
-disp2 = sitk.ReadImage("sim_u_BA.nii.gz", sitk.sitkVectorFloat64)
-comp = sitk.ReadImage("sim_comp.nii.gz", sitk.sitkVectorFloat64)
+a = 1
+if a:
+    disp1 = sitk.ReadImage("sim_u_AB.nii.gz", sitk.sitkVectorFloat64)
+    disp2 = sitk.ReadImage("sim_u_BA.nii.gz", sitk.sitkVectorFloat64)
+    comp = sitk.ReadImage("sim_comp.nii.gz", sitk.sitkVectorFloat64)
+else:
+    disp1 = sitk.ReadImage("cum_AB_disp.nii.gz", sitk.sitkVectorFloat64)
+    disp2 = sitk.ReadImage("cum_BA_disp.nii.gz", sitk.sitkVectorFloat64)
+    comp = sitk.ReadImage("comp_AB_BA.nii.gz", sitk.sitkVectorFloat64)
 
 # 计算雅可比行列式
 jacobian1 = sitk.DisplacementFieldJacobianDeterminant(disp1)
@@ -33,7 +39,7 @@ img2 = axes[1].imshow(jacobian2_np[init_slice, :, :], cmap='jet', vmin=jacobian2
 axes[1].set_title(f"Disp2 Slice {init_slice}")
 axes[1].axis('off')
 
-img3 = axes[2].imshow(comp_np[init_slice, :, :], cmap='jet', vmin=min(comp_np.min(), 0), vmax=max(comp_np.max(), 1.0))
+img3 = axes[2].imshow(comp_np[init_slice, :, :], cmap='jet', vmin=min(comp_np.min(), 0), vmax=max(comp_np.max(), 0.2))
 axes[2].set_title(f"Comp Error Slice {init_slice}")
 axes[2].axis('off')
 

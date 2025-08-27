@@ -38,8 +38,8 @@ def compute_jacobian_determinant_indexspace(u):
     We compute J = I + grad(u) (with gradients along index axes).
     """
     # compute gradients of each displacement component
-    uz = u[..., 0];
-    uy = u[..., 1];
+    uz = u[..., 0]
+    uy = u[..., 1]
     ux = u[..., 2]
     # gradients: d(uz)/dz, d(uz)/dy, d(uz)/dx, etc.
     duz_dz = np.gradient(uz, axis=0)
@@ -155,10 +155,6 @@ def bspline_register(fixed, moving,
         reg.AddCommand(sitk.sitkIterationEvent, lambda: print(f"Iter metric: {reg.GetMetricValue()}"))
 
     out_transform = reg.Execute(fixed, moving)
-    # Convert transform to displacement field in physical space
-    # disp_physical = sitk.TransformToDisplacementField(out_transform,
-    #                                                   sitk.sitkVectorFloat64,
-    #                                                   referenceImage=fixed)
     disp_physical = sitk.TransformToDisplacementField(
         out_transform,
         sitk.sitkVectorFloat64,
@@ -217,8 +213,6 @@ def alternating_bspline_registration(imageA, imageB,
                                         imageA)  # displacement field in index-space -> convert to physical displacement image
             # convert index-space to physical displacements:
             # Create displacement image in physical mm from index-space by multiplying spacing and swapping components
-            # disp_phys = sitk.Image(X=imageA.GetSize()[0], y=imageA.GetSize()[1], z=imageA.GetSize()[2],
-            #                        pixelID=sitk.sitkVectorFloat64)
             size = imageA.GetSize()
             disp_phys = sitk.Image(size, sitk.sitkVectorFloat64, 3)
 
@@ -284,7 +278,7 @@ if __name__ == "__main__":
     cum_AB, cum_BA = alternating_bspline_registration(fixed, moving,
                                                       iterations=3,
                                                       bspline_spacing=(30, 30, 30),
-                                                      metric='NCC',
+                                                      metric='MSE',
                                                       smooth_sigma_after_compose=0.8,
                                                       verbose=True)
 
