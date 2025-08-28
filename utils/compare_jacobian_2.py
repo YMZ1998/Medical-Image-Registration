@@ -4,7 +4,7 @@ from matplotlib.widgets import Slider
 
 # -----------------------------
 # 读取位移场
-a = 1
+a = 0
 if a:
     disp1 = sitk.ReadImage("sim_u_AB.nii.gz", sitk.sitkVectorFloat64)
     disp2 = sitk.ReadImage("sim_u_BA.nii.gz", sitk.sitkVectorFloat64)

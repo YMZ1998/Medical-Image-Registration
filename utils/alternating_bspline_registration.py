@@ -269,15 +269,17 @@ def alternating_bspline_registration(imageA, imageB,
 # ---------- Example usage ----------
 if __name__ == "__main__":
     # replace with your image paths
-    fixed_path = r"D:\Data\mir\validation\fixed.nii.gz"  # B
-    moving_path = r"D:\Data\mir\validation\moving.nii.gz"  # A
+    # fixed_path = r"D:\Data\mir\validation\fixed.nii.gz"  # B
+    # moving_path = r"D:\Data\mir\validation\moving.nii.gz"  # A
+    fixed_path = r"D:\Data\mir\validation\mask_cube.nii.gz"
+    moving_path = r"D:\Data\mir\validation\mask_cylinder.nii.gz"
 
     fixed = sitk.ReadImage(fixed_path, sitk.sitkFloat32)
     moving = sitk.ReadImage(moving_path, sitk.sitkFloat32)
 
     cum_AB, cum_BA = alternating_bspline_registration(fixed, moving,
                                                       iterations=3,
-                                                      bspline_spacing=(30, 30, 30),
+                                                      bspline_spacing=(20, 20, 20),
                                                       metric='MSE',
                                                       smooth_sigma_after_compose=0.8,
                                                       verbose=True)
@@ -289,3 +291,26 @@ if __name__ == "__main__":
     sitk.WriteImage(dispBA_img, "cum_BA_disp.nii.gz")
 
     print("Done, saved cumulative displacement fields.")
+
+    dispAB_img = sitk.Cast(dispAB_img, sitk.sitkVectorFloat64)
+    dispBA_img = sitk.Cast(dispBA_img, sitk.sitkVectorFloat64)
+    # --- 应用形变场，保存配准后的图像 ---
+    # A->B：把 moving 变到 fixed 空间
+    resampler_AB = sitk.ResampleImageFilter()
+    resampler_AB.SetReferenceImage(fixed)
+    resampler_AB.SetInterpolator(sitk.sitkLinear)
+    resampler_AB.SetDefaultPixelValue(0)
+    resampler_AB.SetTransform(sitk.DisplacementFieldTransform(dispAB_img))
+    moved_to_fixed = resampler_AB.Execute(moving)
+    sitk.WriteImage(moved_to_fixed, "moving_in_fixed.nii.gz")
+
+    # B->A：把 fixed 变到 moving 空间
+    resampler_BA = sitk.ResampleImageFilter()
+    resampler_BA.SetReferenceImage(moving)
+    resampler_BA.SetInterpolator(sitk.sitkLinear)
+    resampler_BA.SetDefaultPixelValue(0)
+    resampler_BA.SetTransform(sitk.DisplacementFieldTransform(dispBA_img))
+    fixed_in_moving = resampler_BA.Execute(fixed)
+    sitk.WriteImage(fixed_in_moving, "fixed_in_moving.nii.gz")
+
+    print("Done, saved displacement fields and warped images.")
