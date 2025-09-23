@@ -269,8 +269,8 @@ def alternating_bspline_registration(imageA, imageB,
 # ---------- Example usage ----------
 if __name__ == "__main__":
     # replace with your image paths
-    # fixed_path = r"D:\Data\mir\validation\fixed.nii.gz"  # B
-    # moving_path = r"D:\Data\mir\validation\moving.nii.gz"  # A
+    # fixed_path = r"D:\Data\mir\validation\fixed.nii.gz"
+    # moving_path = r"D:\Data\mir\validation\moving.nii.gz"
     fixed_path = r"D:\Data\mir\validation\mask_cube.nii.gz"
     moving_path = r"D:\Data\mir\validation\mask_cylinder.nii.gz"
 

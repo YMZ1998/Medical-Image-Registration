@@ -43,7 +43,7 @@ print(" max =", np.max(err_mag))
 plt.figure(figsize=(12, 4))
 for i, z in enumerate([Z // 4, Z // 2, 3 * Z // 4]):
     plt.subplot(1, 3, i + 1)
-    plt.imshow(err_mag[z], cmap='hot')
+    plt.imshow(err_mag[z], cmap='jet')
     plt.colorbar()
     plt.title(f"Error slice z={z}")
     plt.axis('off')

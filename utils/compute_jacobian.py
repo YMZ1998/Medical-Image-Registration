@@ -1,16 +1,18 @@
 import SimpleITK as sitk
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.widgets import Slider
 
 # 读入位移场
-disp = sitk.ReadImage(r"D:\Data\mir\validation\deformation_field.nii.gz", sitk.sitkVectorFloat64)
+disp = sitk.ReadImage(r"D:\debug\deformation_field.nii.gz", sitk.sitkVectorFloat64)
 
 # 计算雅可比行列式
 jacobian_det = sitk.DisplacementFieldJacobianDeterminant(disp)
 
 # 转 numpy 可视化（二维示例）
 jacobian_np = sitk.GetArrayFromImage(jacobian_det)
-
+# jacobian_np = np.where(jacobian_np < 1, jacobian_np, 1)
+# jacobian_np = np.where(jacobian_np > 0, jacobian_np, 0)
 # 假设三维数组 jacobian_np.shape = (D,H,W)
 D, H, W = jacobian_np.shape
 
