@@ -20,7 +20,7 @@ atlas_path = Path("data/atlas")
 if not atlas_path.exists():
     install_open_atlas(atlas_path)
 
-patid = "LUNG1-002"
+patid = "LCTSC-Test-S2-201"
 
 image_path = atlas_path.joinpath(patid, "IMAGES", "CT.nii.gz")
 image = sitk.ReadImage(str(image_path)) # onyl used for visualisation
