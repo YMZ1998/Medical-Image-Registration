@@ -9,6 +9,7 @@ from skimage.draw import polygon
 def load_ct_series(ct_path):
     reader = sitk.ImageSeriesReader()
     series_ids = reader.GetGDCMSeriesIDs(ct_path)
+    print(series_ids)
     if not series_ids:
         raise FileNotFoundError(f"No DICOM series found in {ct_path}")
     series_files = reader.GetGDCMSeriesFileNames(ct_path, series_ids[0])
@@ -51,12 +52,18 @@ def rtstruct_to_masks(rtstruct_path, ct_image, out_folder):
         sitk.WriteImage(mask_img, out_path)
         print(f"Saved: {out_path}")
 
+def find_rtstruct_dcm(ct_dir):
+    for root, dirs, files in os.walk(ct_dir):
+        for file in files:
+            if file.endswith(".dcm") and "RTSTRUCT" in file.upper():
+                return os.path.join(root, file)
 
 if __name__ == "__main__":
-    ct_dir = r"C:\Users\Admin\Desktop\20-1741_LIBOCHUAN"
-    rtstruct_dcm = r"C:\Users\Admin\Desktop\20-1741_LIBOCHUAN\RTSTRUCT1.2.276.0.7230010.3.1.4.1092969453.6072.1594198040.375.dcm"
+    ct_dir = r"C:\Users\Admin\Desktop\17-2320_JIANGTAO"
+    rtstruct_dcm = find_rtstruct_dcm(ct_dir)
+    print(rtstruct_dcm)
     out_dir = r"C:\Users\Admin\Desktop\\nii"
-    # ====================================
+
     print("Starting RTSTRUCT to NIfTI conversion...")
     ct_image = load_ct_series(ct_dir)
     sitk.WriteImage(ct_image, os.path.join(out_dir, "image.nii.gz"))
