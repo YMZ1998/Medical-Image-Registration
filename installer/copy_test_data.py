@@ -7,9 +7,9 @@ from utils.dataset import get_test_files
 
 
 def copy_test_data(save_dir):
-    test_files = get_test_files(os.path.join('../data', "NLST"))
+    test_files = get_test_files(os.path.join(r"D:\Data\MIR\NLST2023", "NLST"))
     print(len(test_files))
-    case_id = 7
+    case_id = 8
     pprint(test_files[case_id])
     fixed_path = test_files[case_id]["fixed_image"]
     moving_path = test_files[case_id]["moving_image"]

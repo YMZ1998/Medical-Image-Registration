@@ -85,7 +85,7 @@ def val_onnx(args):
     # visualize_one_case({"fixed_image": fixed, "moving_image": moving}, moved_np, ddf_np)
 
     print("Saving results...")
-    remove_and_create_dir(args.result_path)
+    # remove_and_create_dir(args.result_path)
 
     pred_array = moved_np[0, 0]
     ref_image = sitk.ReadImage(args.fixed_path)

@@ -2,6 +2,8 @@ import argparse
 import os
 import shutil
 import warnings
+import datetime
+import time
 
 import SimpleITK as sitk
 import numpy as np
@@ -49,13 +51,81 @@ def resample_image(image, target_size):
     return resampler.Execute(image)
 
 
-def save_array_as_nii(array, file_path, reference):
-    sitk_image = sitk.GetImageFromArray(array)
-    sitk_image = sitk.Cast(sitk_image, reference.GetPixelIDValue())
+def resample_vector_field(
+    ddf_image,
+    reference_image
+):
+    try:
+        # 1. 创建 ResampleImageFilter 实例
+        resample = sitk.ResampleImageFilter()
+
+        # 2. 设置参考图像。这将定义输出的尺寸、间距、原点和方向。
+        # resample.SetReferenceImage(reference_image)
+        resample.SetSize(reference_image.GetSize())
+        resample.SetOutputSpacing(reference_image.GetSpacing())
+        resample.SetOutputOrigin(reference_image.GetOrigin())
+        # resample.SetOutputDirection(reference_image.GetDirection())
+
+        resample.SetInterpolator(sitk.sitkLinear)
+        resample.SetDefaultPixelValue(0.0)
+
+        # 5. 执行重采样
+        resampled_ddf = resample.Execute(ddf_image)
+
+        return resampled_ddf
+
+    except Exception as e:
+        print(f"重采样向量场时发生错误: {e}")
+        raise e
+
+
+def save_ddf(array, file_path, reference=None):
+    # Normalize shapes: allow (3,D,H,W) or (D,H,W,3)
+    arr = np.asarray(array)
+    if arr.ndim == 4 and arr.shape[0] == 3:
+        # (3, D, H, W) -> (D, H, W, 3)
+        arr = np.moveaxis(arr, 0, -1)
+    elif arr.ndim == 4 and arr.shape[-1] == 3:
+        # already (D,H,W,3)
+        pass
+    else:
+        raise ValueError(f"Unsupported DDF array shape {arr.shape}. Expect (3,D,H,W) or (D,H,W,3).")
+
+    # Ensure dtype is float64 for DisplacementFieldTransform compatibility
+    arr = arr.astype(np.float64, copy=False)
+    print(np.max(arr), np.min(arr))
+    print("DDF abs mean:", np.mean(np.abs(arr)))
+    # SimpleITK expects (z,y,x,vector) -> GetImageFromArray with isVector=True
+    sitk_image = sitk.GetImageFromArray(arr, isVector=True)
+    # print("DDF GetSpacing:", sitk_image.GetSpacing())
+    # print("DDF GetOrigin:", sitk_image.GetOrigin())
+    # print("DDF GetSize:", sitk_image.GetSize())
+    # print("DDF GetDirection:", sitk_image.GetDirection())
+    # print("reference GetDirection:", reference.GetDirection())
+
+    sitk_image.SetSpacing(reference.GetSpacing())
+    sitk_image.SetOrigin(reference.GetOrigin())
+
+    # Copy spatial meta-data from reference (if provided)
     if reference is not None:
-        sitk_image = resample_image(sitk_image, reference.GetSize())
+        if list(sitk_image.GetSize()) != list(reference.GetSize()):
+            print(f"Resampling DDF from {sitk_image.GetSize()} to {reference.GetSize()}")
+            sitk_image = resample_vector_field(sitk_image, reference)
         sitk_image.CopyInformation(reference)
+    arr = sitk.GetArrayFromImage(sitk_image)
+    print(np.max(arr), np.min(arr))
+    print("DDF abs mean:", np.mean(np.abs(arr)))
+    # print("DDF GetSpacing:", sitk_image.GetSpacing())
+    # print("DDF GetOrigin:", sitk_image.GetOrigin())
+    # print("DDF GetDirection:", sitk_image.GetDirection())
+    # Ensure pixel type is vector float64
+    sitk_image = sitk.Cast(sitk_image, sitk.sitkVectorFloat32)
+
+    os.makedirs(os.path.dirname(file_path) or ".", exist_ok=True)
     sitk.WriteImage(sitk_image, file_path)
+    print(
+        f"Saved DDF to {file_path}; size={sitk_image.GetSize()}, comps={sitk_image.GetNumberOfComponentsPerPixel()}, "
+        f"type={sitk_image.GetPixelIDTypeAsString()}")
 
 
 def val_onnx(args):
@@ -78,14 +148,18 @@ def val_onnx(args):
     [ddf_np] = ort_session.run(None, ort_inputs)  # shapes: (1, 3, D, H, W)
 
     print(f"DDF shape: {ddf_np.shape}")
-
+    print(np.max(ddf_np), np.min(ddf_np))
     print("Saving results...")
-    remove_and_create_dir(args.result_path)
+    # remove_and_create_dir(args.result_path)
 
-    pred_array = ddf_np[0, 0]
+    pred_array = ddf_np[0]
+    print("Saving DDF...")
+    print(pred_array.shape)
     ref_image = sitk.ReadImage(args.fixed_path)
 
-    save_array_as_nii(pred_array, os.path.join(args.result_path, args.file_name), reference=ref_image)
+    start = time.time()
+    save_ddf(pred_array, os.path.join(args.result_path, args.file_name), reference=ref_image)
+    print("Save DDF Consume time:", str(datetime.timedelta(seconds=int(time.time() - start))))
     print("ONNX inference complete!")
 
 
@@ -95,14 +169,11 @@ if __name__ == '__main__':
     parser.add_argument('--fixed_path', type=str, default='./data/fixed.nii.gz', help="Path to fixed (reference) image")
     parser.add_argument('--moving_path', type=str, default='./data/moving.nii.gz', help="Path to moving image")
     parser.add_argument('--result_path', type=str, default='./result', help="Directory to save the prediction result")
-    parser.add_argument('--file_name', type=str, default='predict_ddf.nii.gz', help="Path to save results")
+    parser.add_argument('--file_name', type=str, default='ddf_field.nii.gz', help="Path to save results")
     parser.add_argument('--image_size', type=tuple, default=(192, 192, 192), help="Input image size as a tuple")
 
     args = parser.parse_args()
     print("Arguments:", args)
-
-    import datetime
-    import time
 
     start = time.time()
     val_onnx(args)

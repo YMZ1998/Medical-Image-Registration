@@ -18,11 +18,11 @@ pip install -i https://pypi.tuna.tsinghua.edu.cn/simple torchsummary
 ### 1. Create and Activate Conda Environment
 
 ```bash
-conda create --name MIR python=3.9
+conda create --name MIR-INSTALL python=3.9
 ```
 
 ```bash
-conda activate MIR
+conda activate MIR-INSTALL
 ```
 
 ### 2. Install Required Python Packages

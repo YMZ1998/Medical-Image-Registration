@@ -1,0 +1,8 @@
+Example:
+
+MIR-LUNG.exe --onnx_path ./checkpoint/mir_lung.onnx --fixed_path ./data/fixed.nii.gz --moving_path ./data/moving.nii.gz --result_path ./result
+
+- `--onnx_path`: Path to ONNX model.
+- `--fixed_path`:Path to fixed image.
+- `--moving_path`:Path to moving image.
+- `--result_path`: Path where the results will be saved.
