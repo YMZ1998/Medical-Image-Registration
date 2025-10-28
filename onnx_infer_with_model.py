@@ -48,6 +48,9 @@ def predict_single_onnx():
     ort_inputs = {"input": input_tensor}
     ort_outs = ort_session.run(None, ort_inputs)
     ddf_image = torch.tensor(ort_outs[0]).to(device)
+    print("dff shape", ddf_image.shape)
+    save_array_as_nii(ddf_image[0].cpu().numpy()[0].transpose(2, 1, 0), os.path.join("results", args.arch, "ddf_image.nii.gz"),
+                      reference=sitk.ReadImage(fixed_image_path))
 
     # Warp
     warp_layer = Warp().to(device)

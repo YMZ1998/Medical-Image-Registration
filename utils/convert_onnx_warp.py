@@ -74,11 +74,11 @@ def main():
     model_with_warp = Warp().to(device)
 
     # 设置输入 shape
-    # input_shape = [(1, 1, args.image_size[0], args.image_size[1], args.image_size[2]),
-    #                (1, 3, args.image_size[0], args.image_size[1], args.image_size[2])]
+    input_shape = [(1, 1, args.image_size[0], args.image_size[1], args.image_size[2]),
+                   (1, 3, args.image_size[0], args.image_size[1], args.image_size[2])]
 
-    input_shape = [(1, 1, 96, 96, 96),
-                   (1, 3, 96, 96, 96)]
+    # input_shape = [(1, 1, 96, 96, 96),
+    #                (1, 3, 96, 96, 96)]
     # 导出路径
     save_path = os.path.join("../results", args.arch, "warp.onnx")
     os.makedirs(os.path.dirname(save_path), exist_ok=True)

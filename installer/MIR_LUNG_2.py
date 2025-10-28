@@ -64,8 +64,9 @@ def val_onnx(args):
     print("Loading and preprocessing images...")
     fixed = load_image(args.fixed_path, args.image_size)
     moving = load_image(args.moving_path, args.image_size)
+    original_moving = load_image(args.moving_path, args.image_size, normalize=False)
 
-    input_tensor = np.concatenate([moving, fixed], axis=0)  # shape: (2, D, H, W)
+    input_tensor = np.concatenate([moving, fixed, original_moving], axis=0)  # shape: (3, D, H, W)
     input_tensor = np.expand_dims(input_tensor, axis=0).astype(np.float32)  # shape: (1, 3, D, H, W)
 
     print(f"Input tensor shape: {input_tensor.shape}")
@@ -75,14 +76,18 @@ def val_onnx(args):
 
     print("Running inference...")
     ort_inputs = {"input": input_tensor}
-    [ddf_np] = ort_session.run(None, ort_inputs)  # shapes: (1, 3, D, H, W)
+    moved_np, ddf_np = ort_session.run(None, ort_inputs)  # shapes: (1, 1, D, H, W), (1, 3, D, H, W)
 
-    print(f"DDF shape: {ddf_np.shape}")
+    print(f"Moved output shape: {moved_np.shape}, DDF shape: {ddf_np.shape}")
+
+    # print("Visualizing results...")
+    # from utils.visualization_numpy import visualize_one_case
+    # visualize_one_case({"fixed_image": fixed, "moving_image": moving}, moved_np, ddf_np)
 
     print("Saving results...")
     remove_and_create_dir(args.result_path)
 
-    pred_array = ddf_np[0, 0]
+    pred_array = moved_np[0, 0]
     ref_image = sitk.ReadImage(args.fixed_path)
 
     save_array_as_nii(pred_array, os.path.join(args.result_path, args.file_name), reference=ref_image)
@@ -91,11 +96,11 @@ def val_onnx(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Run ONNX model for registration purposes")
-    parser.add_argument('--onnx_path', type=str, default='./checkpoint/mir_lung.onnx', help="Path to ONNX model file")
+    parser.add_argument('--onnx_path', type=str, default='./checkpoint/mir_lung2.onnx', help="Path to ONNX model file")
     parser.add_argument('--fixed_path', type=str, default='./data/fixed.nii.gz', help="Path to fixed (reference) image")
     parser.add_argument('--moving_path', type=str, default='./data/moving.nii.gz', help="Path to moving image")
     parser.add_argument('--result_path', type=str, default='./result', help="Directory to save the prediction result")
-    parser.add_argument('--file_name', type=str, default='predict_ddf.nii.gz', help="Path to save results")
+    parser.add_argument('--file_name', type=str, default='predict.nii.gz', help="Path to save results")
     parser.add_argument('--image_size', type=tuple, default=(192, 192, 192), help="Input image size as a tuple")
 
     args = parser.parse_args()
