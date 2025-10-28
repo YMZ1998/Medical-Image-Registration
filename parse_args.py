@@ -10,11 +10,12 @@ def get_device():
     print("using {} device.".format(device))
     return device
 
+
 def gpu_usage(device=0):
-    allocated = torch.cuda.memory_allocated(device) / 1024**3  # GB
-    max_allocated = torch.cuda.max_memory_allocated(device) / 1024**3  # GB
-    reserved = torch.cuda.memory_reserved(device) / 1024**3  # GB
-    total = torch.cuda.get_device_properties(device).total_memory / 1024**3  # GB
+    allocated = torch.cuda.memory_allocated(device) / 1024 ** 3  # GB
+    max_allocated = torch.cuda.max_memory_allocated(device) / 1024 ** 3  # GB
+    reserved = torch.cuda.memory_reserved(device) / 1024 ** 3  # GB
+    total = torch.cuda.get_device_properties(device).total_memory / 1024 ** 3  # GB
 
     print(f'GPU {device} usage:')
     print(f'Allocated (current/max): {allocated:.2f} / {max_allocated:.2f} GB')
@@ -88,7 +89,7 @@ def get_net(args):
 def parse_args():
     parser = argparse.ArgumentParser(description="Run a basic UNet segmentation baseline.")
     parser.add_argument('--arch', '-a', metavar='ARCH', default='seg_resnet', help='unet/dynunet/seg_resnet')
-    parser.add_argument("--data_path", default=r"./data", type=str, help="training data folder")
+    parser.add_argument("--data_path", default=r"D:\Data\MIR\NLST2023", type=str, help="training data folder")
     parser.add_argument("--result_path", default="./results", type=str, help="inference folder")
 
     parser.add_argument('--lr', default=1e-4, type=float, help='initial learning rate')
@@ -123,6 +124,7 @@ def parse_args():
 if __name__ == '__main__':
     from torchsummary import summary
 
+    get_device()
     args = parse_args()
     # args.arch = 'dynunet'
     # args.image_size = (256, 256, 32)

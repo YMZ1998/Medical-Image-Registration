@@ -96,7 +96,7 @@ def visualize_check_sample(train_files, spatial_size, target_res):
 
 
 if __name__ == "__main__":
-    root_dir = "../data"
+    root_dir = r"D:\Data\MIR\NLST2023"
     os.makedirs(root_dir, exist_ok=True)
     data_dir = os.path.join(root_dir, "NLST")
 

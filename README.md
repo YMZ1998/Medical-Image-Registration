@@ -6,6 +6,13 @@ NLST Task: Paired Lung CT 3D Registration with Keypoints
 
 https://learn2reg.grand-challenge.org/Datasets/
 
+# Requirements
+```bash
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+pip install -i https://pypi.tuna.tsinghua.edu.cn/simple monai
+pip install -i https://pypi.tuna.tsinghua.edu.cn/simple torchsummary
+```
+
 ## PyInstaller Installation Guide:
 
 ### 1. Create and Activate Conda Environment
@@ -25,7 +32,7 @@ pip install -i https://pypi.tuna.tsinghua.edu.cn/simple pyinstaller
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple SimpleITK
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple onnxruntime
 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple tqdm
-pip install scipy -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install -i https://pypi.tuna.tsinghua.edu.cn/simple scipy
 ```
 
 ### 3. Use PyInstaller to Package Python Script

@@ -26,7 +26,7 @@ def predict_single():
 
     test_files = get_test_files(os.path.join(args.data_path, "NLST"))
 
-    case_id = 6
+    case_id = 2
 
     pprint(test_files[case_id])
     fixed_image_path = test_files[case_id]["fixed_image"]
@@ -66,6 +66,7 @@ def predict_single():
 
     print("Saving results...")
     save_dir = os.path.join("results", args.arch)
+    os.makedirs(save_dir, exist_ok=True)
     print("Saving results to: ", save_dir)
 
     pred_image_array = original_pred_image[0].cpu().numpy()[0].transpose(2, 1, 0)
