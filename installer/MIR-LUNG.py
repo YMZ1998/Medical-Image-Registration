@@ -33,7 +33,7 @@ def load_image(image_path, spatial_size, normalize=True):
     image = resample_image(image, spatial_size)
     array = sitk.GetArrayFromImage(image)  # (D, H, W)
 
-    return np.expand_dims(array, axis=0)  # shape: (1, D, H, W)
+    return np.expand_dims(array, axis=0), image  # shape: (1, D, H, W)
 
 
 def resample_image(image, target_size):
@@ -79,20 +79,18 @@ def resample_vector_field(
         raise e
 
 
-def save_ddf(array, file_path, reference=None):
+def save_ddf(array, file_path,origin_spacing, reference=None):
     # Normalize shapes: allow (3,D,H,W) or (D,H,W,3)
     arr = np.asarray(array)
     if arr.ndim == 4 and arr.shape[0] == 3:
         # (3, D, H, W) -> (D, H, W, 3)
         arr = np.moveaxis(arr, 0, -1)
     elif arr.ndim == 4 and arr.shape[-1] == 3:
-        # already (D,H,W,3)
         pass
     else:
         raise ValueError(f"Unsupported DDF array shape {arr.shape}. Expect (3,D,H,W) or (D,H,W,3).")
 
-    # Ensure dtype is float64 for DisplacementFieldTransform compatibility
-    arr = arr.astype(np.float64, copy=False)
+    arr = arr.astype(np.float32, copy=False)
     print(np.max(arr), np.min(arr))
     print("DDF abs mean:", np.mean(np.abs(arr)))
     # SimpleITK expects (z,y,x,vector) -> GetImageFromArray with isVector=True
@@ -103,10 +101,9 @@ def save_ddf(array, file_path, reference=None):
     # print("DDF GetDirection:", sitk_image.GetDirection())
     # print("reference GetDirection:", reference.GetDirection())
 
-    sitk_image.SetSpacing(reference.GetSpacing())
+    sitk_image.SetSpacing(origin_spacing)
     sitk_image.SetOrigin(reference.GetOrigin())
 
-    # Copy spatial meta-data from reference (if provided)
     if reference is not None:
         if list(sitk_image.GetSize()) != list(reference.GetSize()):
             print(f"Resampling DDF from {sitk_image.GetSize()} to {reference.GetSize()}")
@@ -118,22 +115,21 @@ def save_ddf(array, file_path, reference=None):
     # print("DDF GetSpacing:", sitk_image.GetSpacing())
     # print("DDF GetOrigin:", sitk_image.GetOrigin())
     # print("DDF GetDirection:", sitk_image.GetDirection())
-    # Ensure pixel type is vector float64
     sitk_image = sitk.Cast(sitk_image, sitk.sitkVectorFloat32)
 
     os.makedirs(os.path.dirname(file_path) or ".", exist_ok=True)
     sitk.WriteImage(sitk_image, file_path)
-    print(
-        f"Saved DDF to {file_path}; size={sitk_image.GetSize()}, comps={sitk_image.GetNumberOfComponentsPerPixel()}, "
-        f"type={sitk_image.GetPixelIDTypeAsString()}")
+    print(f"Saved DDF to {file_path}; size={sitk_image.GetSize()}, "
+          f"comps={sitk_image.GetNumberOfComponentsPerPixel()}, "
+          f"type={sitk_image.GetPixelIDTypeAsString()}")
 
 
 def val_onnx(args):
     warnings.filterwarnings("ignore")
 
     print("Loading and preprocessing images...")
-    fixed = load_image(args.fixed_path, args.image_size)
-    moving = load_image(args.moving_path, args.image_size)
+    fixed, fixed_image = load_image(args.fixed_path, args.image_size)
+    moving, moving_image = load_image(args.moving_path, args.image_size)
 
     input_tensor = np.concatenate([moving, fixed], axis=0)  # shape: (2, D, H, W)
     input_tensor = np.expand_dims(input_tensor, axis=0).astype(np.float32)  # shape: (1, 3, D, H, W)
@@ -158,7 +154,7 @@ def val_onnx(args):
     ref_image = sitk.ReadImage(args.fixed_path)
 
     start = time.time()
-    save_ddf(pred_array, os.path.join(args.result_path, args.file_name), reference=ref_image)
+    save_ddf(pred_array, os.path.join(args.result_path, args.file_name),fixed_image.GetSpacing(), reference=ref_image)
     print("Save DDF Consume time:", str(datetime.timedelta(seconds=int(time.time() - start))))
     print("ONNX inference complete!")
 
