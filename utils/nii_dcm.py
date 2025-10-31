@@ -10,7 +10,7 @@ from pydicom.dataset import FileDataset, FileMetaDataset
 from pydicom.uid import generate_uid, CTImageStorage, ExplicitVRLittleEndian
 
 
-def nii_to_dicom_series(nii_path, out_dir):
+def nii_to_dicom_series(nii_path, out_dir, use_random_id=True):
     if os.path.exists(out_dir):
         shutil.rmtree(out_dir)
     os.makedirs(out_dir, exist_ok=True)
@@ -33,8 +33,14 @@ def nii_to_dicom_series(nii_path, out_dir):
     # 统一 UID
     study_uid = generate_uid()
     series_uid = generate_uid()
-    patient_id = str(random.randint(10 ** 7, 10 ** 8 - 1))
-    patient_name = f"{uuid.uuid4().hex[:8]}^{uuid.uuid4().hex[:8]}"
+    if use_random_id:
+        patient_id = str(random.randint(10 ** 7, 10 ** 8 - 1))
+        patient_name = f"{uuid.uuid4().hex[:8]}^{uuid.uuid4().hex[:8]}"
+    else:
+        patient_id = "12345678"
+        patient_name = "TEST^4DCT"
+    print("Patient ID:", patient_id)
+    print("Patient Name:", patient_name)
     today = datetime.datetime.now().strftime("%Y%m%d")
 
     # -----------------------------
@@ -116,8 +122,17 @@ def nii_to_dicom_series(nii_path, out_dir):
 
     print(f"Done, wrote {array.shape[0]} slices to {out_dir}")
 
+
+def get_image_basename(path: str) -> str:
+    """返回医学图像文件名（去掉路径和扩展名，如 fixed.nii.gz → fixed）"""
+    filename = os.path.basename(path)
+    for ext in [".nii.gz", ".nii", ".mha", ".mhd", ".nrrd"]:
+        if filename.endswith(ext):
+            return filename[: -len(ext)]
+    return os.path.splitext(filename)[0]  # fallback
+
+
 if __name__ == "__main__":
-    nii_path1 = r"D:\Data\seg\open_atlas\test_atlas\LCTSC-Test-S2-201\IMAGES\CT.nii.gz"
-    nii_path = r"D:\Data\seg\Totalsegmentator_dataset_v201\s0030\ct2.nii.gz"
-    out_dir = os.path.join(os.path.dirname(nii_path), "dicom_series")
-    nii_to_dicom_series(nii_path, out_dir)
+    nii_path = r"D:\code\Medical-Image-Registration\installer\data2\fixed.nii.gz"
+    out_dir = os.path.join(os.path.dirname(nii_path), get_image_basename(nii_path))
+    nii_to_dicom_series(nii_path, out_dir, 0)

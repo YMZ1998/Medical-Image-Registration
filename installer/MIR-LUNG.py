@@ -11,20 +11,17 @@ import onnxruntime as ort
 
 
 def remove_and_create_dir(path: str):
-    """删除并重新创建目录"""
     if os.path.exists(path):
         shutil.rmtree(path)
     os.makedirs(path, exist_ok=True)
 
 
 def normalize_image(array: np.ndarray, min_v: float, max_v: float) -> np.ndarray:
-    """将图像裁剪并归一化到 [0, 1] 区间"""
     array = np.clip(array, min_v, max_v)
     return (array - min_v) / (max_v - min_v)
 
 
 def resample_image(image: sitk.Image, target_size: tuple[int, int, int]) -> sitk.Image:
-    """将图像重采样到目标尺寸"""
     original_size = np.array(image.GetSize())
     target_size = np.array(target_size)
     original_spacing = np.array(image.GetSpacing())
@@ -41,7 +38,6 @@ def resample_image(image: sitk.Image, target_size: tuple[int, int, int]) -> sitk
 
 
 def load_image(image_path: str, spatial_size: tuple[int, int, int], normalize: bool = True):
-    """加载图像并重采样"""
     origin_image = sitk.ReadImage(image_path)
     # print(image_path)
     array = sitk.GetArrayFromImage(origin_image).astype(np.float32)
@@ -60,7 +56,6 @@ def load_image(image_path: str, spatial_size: tuple[int, int, int], normalize: b
 
 
 def resample_vector_field(ddf_image: sitk.Image, reference_image: sitk.Image) -> sitk.Image:
-    """将形变场重采样到参考图像空间"""
     original_size = np.array(ddf_image.GetSize())
     target_size = np.array(reference_image.GetSize())
     original_spacing = np.array(ddf_image.GetSpacing())
@@ -71,13 +66,13 @@ def resample_vector_field(ddf_image: sitk.Image, reference_image: sitk.Image) ->
     resampler.SetSize([int(sz) for sz in target_size])
     resampler.SetOutputSpacing([float(sp) for sp in new_spacing])
     resampler.SetOutputOrigin(reference_image.GetOrigin())
+    resampler.SetOutputDirection(reference_image.GetDirection())
     resampler.SetInterpolator(sitk.sitkLinear)
     resampler.SetDefaultPixelValue(0.0)
     return resampler.Execute(ddf_image)
 
 
 def save_ddf(array, file_path, origin_image, reference: sitk.Image):
-    """保存形变场 (DDF)"""
     arr = np.asarray(array)
 
     # 支持 (3, D, H, W) 或 (D, H, W, 3)
@@ -91,13 +86,13 @@ def save_ddf(array, file_path, origin_image, reference: sitk.Image):
     sitk_image = sitk.GetImageFromArray(arr, isVector=True)
     sitk_image.SetSpacing(origin_image.GetSpacing())
     sitk_image.SetOrigin(origin_image.GetOrigin())
+    sitk_image.SetDirection(origin_image.GetDirection())
+
     sitk_image.CopyInformation(origin_image)
 
-    # 若尺寸不匹配则重采样
     if list(sitk_image.GetSize()) != list(reference.GetSize()):
         print(f"[DDF] Resampling from {sitk_image.GetSize()} → {reference.GetSize()}")
         sitk_image = resample_vector_field(sitk_image, reference)
-        # sitk_image=resample_image(sitk_image, reference.GetSize())
     # print(f"[DDF] sitk_image={sitk_image.GetSize()}, reference={reference.GetSize()} ")
     # print(f"[DDF] sitk_image={sitk_image.GetSpacing()}, reference={reference.GetSpacing()} ")
     # print(f"[DDF] sitk_image={sitk_image.GetOrigin()}, reference={reference.GetOrigin()} ")

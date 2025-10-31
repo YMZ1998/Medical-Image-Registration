@@ -9,6 +9,7 @@ results/
 
 *.onnx
 *.nii.gz
+*.dcm
 
 # C extensions
 *.so
