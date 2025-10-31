@@ -60,5 +60,3 @@ def visualize_one_case(check_data, pred_image, phi):
         plt.suptitle(f"Slice {slice_idx} - Pre/Post Registration")
         plt.tight_layout()
         plt.show()
-
-
