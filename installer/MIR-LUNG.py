@@ -145,7 +145,7 @@ if __name__ == '__main__':
     parser.add_argument('--fixed_path', type=str, default='./data/fixed.nii.gz', help="Path to fixed (reference) image")
     parser.add_argument('--moving_path', type=str, default='./data/moving.nii.gz', help="Path to moving image")
     parser.add_argument('--result_path', type=str, default='./result', help="Directory to save prediction result")
-    parser.add_argument('--file_name', type=str, default='ddf_field.nii.gz', help="Output DDF file name")
+    parser.add_argument('--file_name', type=str, default='ddf_field.mhd', help="Output DDF file name")
     parser.add_argument('--image_size', type=tuple, default=(192, 192, 192), help="Input image size (D, H, W)")
 
     args = parser.parse_args()

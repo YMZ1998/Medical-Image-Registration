@@ -10,6 +10,8 @@ results/
 *.onnx
 *.nii.gz
 *.dcm
+*.mhd
+*.raw
 
 # C extensions
 *.so
