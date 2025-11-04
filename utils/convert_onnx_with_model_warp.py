@@ -31,8 +31,8 @@ def export_to_onnx(model, input_shapes, save_path="model.onnx", device="cuda"):
 
     torch_out = model(dummy_input)
 
-    print(f"Output shape: {torch_out.shape}")
-    print(torch_out[0].shape)
+    print(f"Output[0] shape: {torch_out[0].shape}")
+    print(f"Output[1] shape: {torch_out[1].shape}")
 
     torch.onnx.export(
         model,
@@ -64,7 +64,10 @@ def export_to_onnx(model, input_shapes, save_path="model.onnx", device="cuda"):
     }
     ort_outs = ort_session.run(None, ort_inputs)
 
+    print(f"ort_outs[0] shape: {ort_outs[0].shape}")
+    print(f"ort_outs[1] shape: {ort_outs[1].shape}")
     np.testing.assert_allclose(to_numpy(torch_out[0]), ort_outs[0], rtol=1e-02, atol=1e-02)
+    np.testing.assert_allclose(to_numpy(torch_out[1]), ort_outs[1], rtol=1e-02, atol=1e-02)
     print("ONNXRuntime output matches PyTorch output!")
 
 

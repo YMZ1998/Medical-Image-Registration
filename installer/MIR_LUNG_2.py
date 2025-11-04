@@ -113,12 +113,12 @@ def val_onnx(args):
     print("Running inference...")
     ort_inputs = {"input": input_tensor}
     moved_np, ddf_np = ort_session.run(None, ort_inputs)  # shapes: (1, 1, D, H, W), (1, 3, D, H, W)
+    print(f"Moved output shape: {moved_np.shape}, DDF shape: {ddf_np.shape}")
 
     ddf_array = ddf_np[0]  # shape: (C, Z, Y, X)
     ref_image = sitk.ReadImage(args.fixed_path)
     save_ddf(ddf_array, os.path.join(args.result_path, 'ddf_field2.mhd'), fixed_image, reference=ref_image)
 
-    print(f"Moved output shape: {moved_np.shape}, DDF shape: {ddf_np.shape}")
     print(f"  [DDF] max={np.max(ddf_np):.4f}, min={np.min(ddf_np):.4f}, abs_mean={np.mean(ddf_np):.4f}")
 
     # print("Visualizing results...")

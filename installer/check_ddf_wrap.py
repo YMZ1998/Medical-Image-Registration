@@ -6,7 +6,21 @@ import torch
 from matplotlib import pyplot as plt
 from monai.networks.blocks import Warp
 
-from installer.check_ddf import resample_image
+
+def resample_image(image: sitk.Image, target_size: tuple[int, int, int]) -> sitk.Image:
+    original_size = np.array(image.GetSize())
+    target_size = np.array(target_size)
+    original_spacing = np.array(image.GetSpacing())
+    new_spacing = original_spacing * (original_size / target_size)
+
+    resampler = sitk.ResampleImageFilter()
+    resampler.SetSize([int(sz) for sz in target_size])
+    resampler.SetOutputSpacing([float(sp) for sp in new_spacing])
+    resampler.SetInterpolator(sitk.sitkLinear)
+    resampler.SetOutputOrigin(image.GetOrigin())
+    resampler.SetOutputDirection(image.GetDirection())
+
+    return resampler.Execute(image)
 
 
 def sitk_to_torch(image: sitk.Image, device="cpu"):

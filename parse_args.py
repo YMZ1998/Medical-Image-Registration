@@ -88,7 +88,7 @@ def get_net(args):
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Run a basic UNet segmentation baseline.")
-    parser.add_argument('--arch', '-a', metavar='ARCH', default='dynunet', help='unet/dynunet/seg_resnet')
+    parser.add_argument('--arch', '-a', metavar='ARCH', default='seg_resnet', help='unet/dynunet/seg_resnet')
     parser.add_argument("--data_path", default=r"D:\Data\MIR\NLST2023", type=str, help="training data folder")
     parser.add_argument("--result_path", default="./results", type=str, help="inference folder")
 
@@ -114,7 +114,7 @@ def parse_args():
     args.model_dir = os.path.join(os.getcwd(), "models", "nlst", args.arch)
     os.makedirs(args.model_dir, exist_ok=True)
 
-    args.device = get_device()
+    # args.device = get_device()
 
     print(args)
 
