@@ -10,8 +10,8 @@ def copy_checkpoint(src, dst):
 
 
 if __name__ == '__main__':
-    src = '../results/seg_resnet/model.onnx'
-    src2 = '../results/seg_resnet/model_with_warp.onnx'
+    src = '../results/dynunet/model.onnx'
+    src2 = '../results/dynunet/model_with_warp.onnx'
     dst = './checkpoint'
     dst2 = './dist/checkpoint'
     copy_checkpoint(src, dst)

@@ -12,7 +12,7 @@ from monai.utils import set_determinism
 from parse_args import parse_args
 from utils.dataset import get_test_files
 from utils.infer_transforms import load_image
-from utils.process_image import save_array_as_nii
+from utils.process_image import save_array_as_nii, save_ddf, load_image_sitk
 from utils.visualization import visualize_one_case
 from utils.warp import Warp
 
@@ -27,13 +27,14 @@ def predict_single_onnx():
 
     # Load image
     test_files = get_test_files(os.path.join(args.data_path, "NLST"))
-    case_id = 5
+    case_id = 2
     pprint(test_files[case_id])
     fixed_image_path = test_files[case_id]["fixed_image"]
     moving_image_path = test_files[case_id]["moving_image"]
 
     fixed_image = load_image(fixed_image_path, spatial_size)
     moving_image = load_image(moving_image_path, spatial_size)
+    _, original_fixed_image = load_image_sitk(fixed_image_path, spatial_size, normalize=False)
     original_moving_image = load_image(moving_image_path, spatial_size, normalize=False)
 
     input_tensor = torch.cat((moving_image, fixed_image), dim=1).numpy().astype(np.float32)
@@ -49,8 +50,8 @@ def predict_single_onnx():
     ort_outs = ort_session.run(None, ort_inputs)
     ddf_image = torch.tensor(ort_outs[0]).to(device)
     print("dff shape", ddf_image.shape)
-    save_array_as_nii(ddf_image[0].cpu().numpy()[0].transpose(2, 1, 0), os.path.join("results", args.arch, "ddf_image.nii.gz"),
-                      reference=sitk.ReadImage(fixed_image_path))
+    save_ddf(ddf_image[0].cpu().numpy(), os.path.join("results", args.arch, "ddf_image.nii.gz"), original_fixed_image,
+             reference=sitk.ReadImage(fixed_image_path))
 
     # Warp
     warp_layer = Warp().to(device)

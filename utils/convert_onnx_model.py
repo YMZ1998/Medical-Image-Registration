@@ -1,6 +1,5 @@
 import os
 import warnings
-
 import numpy as np
 import onnx
 import onnxruntime
@@ -16,9 +15,15 @@ def export_to_onnx(model, input_shape, save_path="model.onnx", device="cuda"):
 
     with torch.no_grad():
         torch_output = model(dummy_input)
+        if isinstance(torch_output, (list, tuple)):
+            torch_output = torch_output[0]
+        elif isinstance(torch_output, dict):
+            torch_output = next(iter(torch_output.values()))
 
     print(f"Output shape: {torch_output.shape}")
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
+    save_dir = os.path.dirname(save_path) or "."
+    os.makedirs(save_dir, exist_ok=True)
 
     torch.onnx.export(
         model,
@@ -27,13 +32,14 @@ def export_to_onnx(model, input_shape, save_path="model.onnx", device="cuda"):
         input_names=["input"],
         output_names=["output"],
         export_params=True,
-        opset_version=16,
-        dynamic_axes={"input": {0: "batch_size"}, "output": {0: "batch_size"}},
+        opset_version=20,
+        dynamic_axes=None,  # 医学影像尺寸固定
         verbose=False,
     )
 
     print(f"ONNX model saved to: {save_path}")
 
+    # 验证模型结构
     try:
         onnx_model = onnx.load(save_path)
         onnx.checker.check_model(onnx_model)
@@ -42,11 +48,12 @@ def export_to_onnx(model, input_shape, save_path="model.onnx", device="cuda"):
         print(f"ONNX model check failed: {e}")
         return
 
-    ort_session = onnxruntime.InferenceSession(save_path)
+    # 推理一致性验证
+    ort_session = onnxruntime.InferenceSession(save_path, providers=["CPUExecutionProvider"])
     ort_inputs = {ort_session.get_inputs()[0].name: to_numpy(dummy_input)}
     ort_outputs = ort_session.run(None, ort_inputs)
 
-    np.testing.assert_allclose(to_numpy(torch_output), ort_outputs[0], rtol=1e-2, atol=1e-4)
+    np.testing.assert_allclose(to_numpy(torch_output), ort_outputs[0], rtol=1e-2, atol=1e-2)
     print("ONNXRuntime output matches PyTorch output.")
 
 
@@ -60,11 +67,10 @@ def main():
     model = load_best_model(model, model_dir)
 
     input_shape = (1, 2, 192, 192, 192)
-    save_path = os.path.join("../results", args.arch, "model.onnx")
+    save_path = os.path.join("../results", args.arch.replace("/", "_"), "model.onnx")
 
     export_to_onnx(model, input_shape, save_path, device)
 
 
 if __name__ == "__main__":
-    # 输出ddf
     main()

@@ -47,7 +47,6 @@ def load_image(image_path: str, spatial_size: tuple[int, int, int], normalize: b
 
     image = sitk.GetImageFromArray(array)
     image.CopyInformation(origin_image)
-    # print(image.GetSize(), image.GetSpacing(), image.GetOrigin())
     image = resample_image(image, spatial_size)
     # print(image.GetSize(), image.GetSpacing(), image.GetOrigin())
     array = sitk.GetArrayFromImage(image)  # (D, H, W)
@@ -61,6 +60,8 @@ def resample_vector_field(ddf_image: sitk.Image, reference_image: sitk.Image) ->
     original_spacing = np.array(ddf_image.GetSpacing())
     new_spacing = original_spacing * (original_size / target_size)
     # print(original_size, target_size, original_spacing, new_spacing)
+    ratio = new_spacing / original_spacing
+    print("  ratio:", ratio)
 
     resampler = sitk.ResampleImageFilter()
     resampler.SetSize([int(sz) for sz in target_size])
@@ -69,19 +70,30 @@ def resample_vector_field(ddf_image: sitk.Image, reference_image: sitk.Image) ->
     resampler.SetOutputDirection(reference_image.GetDirection())
     resampler.SetInterpolator(sitk.sitkLinear)
     resampler.SetDefaultPixelValue(0.0)
-    return resampler.Execute(ddf_image)
+    resampled = resampler.Execute(ddf_image)
+    # arr = sitk.GetArrayFromImage(resampled)
+    # arr = arr * ratio[::-1]  # SimpleITK array 顺序为 z,y,x
+    # resampled = sitk.GetImageFromArray(arr, isVector=True)
+    # resampled.CopyInformation(reference_image)
+    return resampled
 
 
 def save_ddf(array, file_path, origin_image, reference: sitk.Image):
     arr = np.asarray(array)
-
+    print(f"  [DDF] max={np.max(arr):.4f}, min={np.min(arr):.4f}, abs_mean={np.mean(arr):.4f}")
     # 支持 (3, D, H, W) 或 (D, H, W, 3)
     if arr.ndim == 4 and arr.shape[0] == 3:
         arr = np.moveaxis(arr, 0, -1)
+        # arr = arr.transpose(2, 1, 0, 3)
+        print(f"  [DDF] shape={arr.shape}")
     elif arr.ndim != 4 or arr.shape[-1] != 3:
         raise ValueError(f"Unsupported DDF array shape {arr.shape}. Expect (3,D,H,W) or (D,H,W,3).")
 
     arr = arr.astype(np.float32, copy=False)
+    # sx, sy, sz = origin_image.GetSpacing()
+    # arr[..., 0] /= sx
+    # arr[..., 1] /= sy
+    # arr[..., 2] /= sz
 
     sitk_image = sitk.GetImageFromArray(arr, isVector=True)
     sitk_image.SetSpacing(origin_image.GetSpacing())
@@ -91,7 +103,7 @@ def save_ddf(array, file_path, origin_image, reference: sitk.Image):
     sitk_image.CopyInformation(origin_image)
 
     if list(sitk_image.GetSize()) != list(reference.GetSize()):
-        print(f"[DDF] Resampling from {sitk_image.GetSize()} → {reference.GetSize()}")
+        print(f"  [DDF] Resampling from {sitk_image.GetSize()} → {reference.GetSize()}")
         sitk_image = resample_vector_field(sitk_image, reference)
     # print(f"[DDF] sitk_image={sitk_image.GetSize()}, reference={reference.GetSize()} ")
     # print(f"[DDF] sitk_image={sitk_image.GetSpacing()}, reference={reference.GetSpacing()} ")
@@ -100,12 +112,12 @@ def save_ddf(array, file_path, origin_image, reference: sitk.Image):
     # sitk_image.CopyInformation(reference)
     sitk_image = sitk.Cast(sitk_image, sitk.sitkVectorFloat32)
     arr = sitk.GetArrayFromImage(sitk_image)
-    print(f"[DDF] max={np.max(arr):.4f}, min={np.min(arr):.4f}, abs_mean={np.mean(arr):.4f}")
+    print(f"  [DDF] max={np.max(arr):.4f}, min={np.min(arr):.4f}, abs_mean={np.mean(arr):.4f}")
 
     os.makedirs(os.path.dirname(file_path) or ".", exist_ok=True)
     sitk.WriteImage(sitk_image, file_path)
 
-    print(f"[Saved] {file_path}\n"
+    print(f"  [Saved] {file_path}\n"
           f"  size={sitk_image.GetSize()}, comps={sitk_image.GetNumberOfComponentsPerPixel()}, "
           f"type={sitk_image.GetPixelIDTypeAsString()}")
 
@@ -127,10 +139,11 @@ def val_onnx(args):
     print("[Step 3] 运行推理...")
     ort_inputs = {"input": input_tensor}
     [ddf_np] = ort_session.run(None, ort_inputs)
-    print(f"  DDF shape: {ddf_np.shape}, max={np.max(ddf_np):.4f}, min={np.min(ddf_np):.4f},mean={np.mean(ddf_np):.4f}")
+    print(f"  ddf_np shape: {ddf_np.shape}")
+
 
     print("[Step 4] 保存结果...")
-    pred_array = ddf_np[0]
+    pred_array = ddf_np[0]  # shape: (C, Z, Y, X)
     ref_image = sitk.ReadImage(args.fixed_path)
 
     start = time.time()

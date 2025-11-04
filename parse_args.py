@@ -34,9 +34,9 @@ def get_net(args):
             spatial_dims=3,
             in_channels=2,
             out_channels=args.num_classes,
-            kernel_size=[[3, 3, 3], [3, 3, 3], [3, 3, 3]],
-            strides=[[1, 1, 1], [2, 2, 2], [2, 2, 2]],
-            upsample_kernel_size=[[2, 2, 2], [2, 2, 2]],
+            kernel_size=[[3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]],
+            strides=[[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2]],
+            upsample_kernel_size=[[2, 2, 2], [2, 2, 2], [2, 2, 2]],
             dropout=0.1,
             norm_name="BATCH",
         )
@@ -88,7 +88,7 @@ def get_net(args):
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Run a basic UNet segmentation baseline.")
-    parser.add_argument('--arch', '-a', metavar='ARCH', default='seg_resnet', help='unet/dynunet/seg_resnet')
+    parser.add_argument('--arch', '-a', metavar='ARCH', default='dynunet', help='unet/dynunet/seg_resnet')
     parser.add_argument("--data_path", default=r"D:\Data\MIR\NLST2023", type=str, help="training data folder")
     parser.add_argument("--result_path", default="./results", type=str, help="inference folder")
 

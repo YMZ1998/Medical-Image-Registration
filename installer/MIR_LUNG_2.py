@@ -20,18 +20,19 @@ def normalize_image(array, min_v, max_v):
     return array
 
 
-def load_image(image_path, spatial_size, normalize=True):
-    image = sitk.ReadImage(image_path)
-    array = sitk.GetArrayFromImage(image).astype(np.float32)
+def load_image(image_path: str, spatial_size: tuple[int, int, int], normalize: bool = True):
+    origin_image = sitk.ReadImage(image_path)
+    array = sitk.GetArrayFromImage(origin_image).astype(np.float32)
 
     if normalize:
         array = normalize_image(array, -1200, 400)
 
     image = sitk.GetImageFromArray(array)
+    image.CopyInformation(origin_image)
     image = resample_image(image, spatial_size)
     array = sitk.GetArrayFromImage(image)  # (D, H, W)
 
-    return np.expand_dims(array, axis=0)  # shape: (1, D, H, W)
+    return np.expand_dims(array, axis=0), image
 
 
 def resample_image(image, target_size):
@@ -49,6 +50,44 @@ def resample_image(image, target_size):
     return resampler.Execute(image)
 
 
+def save_ddf(array, file_path, origin_image, reference: sitk.Image):
+    arr = np.asarray(array)
+    print(f"  [DDF] max={np.max(arr):.4f}, min={np.min(arr):.4f}, abs_mean={np.mean(arr):.4f}")
+    # 支持 (3, D, H, W) 或 (D, H, W, 3)
+    if arr.ndim == 4 and arr.shape[0] == 3:
+        arr = np.moveaxis(arr, 0, -1)
+    elif arr.ndim != 4 or arr.shape[-1] != 3:
+        raise ValueError(f"Unsupported DDF array shape {arr.shape}. Expect (3,D,H,W) or (D,H,W,3).")
+
+    arr = arr.astype(np.float32, copy=False)
+    # sx, sy, sz = origin_image.GetSpacing()
+    # arr[..., 0] /= sx
+    # arr[..., 1] /= sy
+    # arr[..., 2] /= sz
+
+    sitk_image = sitk.GetImageFromArray(arr, isVector=True)
+    sitk_image.SetSpacing(origin_image.GetSpacing())
+    sitk_image.SetOrigin(origin_image.GetOrigin())
+    sitk_image.SetDirection(origin_image.GetDirection())
+
+    sitk_image.CopyInformation(origin_image)
+
+    if list(sitk_image.GetSize()) != list(reference.GetSize()):
+        print(f"  [DDF] Resampling from {sitk_image.GetSize()} → {reference.GetSize()}")
+        # sitk_image = resample_vector_field(sitk_image, reference)
+
+    sitk_image = sitk.Cast(sitk_image, sitk.sitkVectorFloat32)
+    arr = sitk.GetArrayFromImage(sitk_image)
+    print(f"  [DDF] max={np.max(arr):.4f}, min={np.min(arr):.4f}, abs_mean={np.mean(arr):.4f}")
+
+    os.makedirs(os.path.dirname(file_path) or ".", exist_ok=True)
+    sitk.WriteImage(sitk_image, file_path)
+
+    print(f"  [Saved] {file_path}\n"
+          f"  size={sitk_image.GetSize()}, comps={sitk_image.GetNumberOfComponentsPerPixel()}, "
+          f"type={sitk_image.GetPixelIDTypeAsString()}")
+
+
 def save_array_as_nii(array, file_path, reference):
     sitk_image = sitk.GetImageFromArray(array)
     sitk_image = sitk.Cast(sitk_image, reference.GetPixelIDValue())
@@ -62,9 +101,9 @@ def val_onnx(args):
     warnings.filterwarnings("ignore")
 
     print("Loading and preprocessing images...")
-    fixed = load_image(args.fixed_path, args.image_size)
-    moving = load_image(args.moving_path, args.image_size)
-    original_moving = load_image(args.moving_path, args.image_size, normalize=False)
+    fixed, fixed_image = load_image(args.fixed_path, args.image_size)
+    moving, moving_image = load_image(args.moving_path, args.image_size)
+    original_moving, _ = load_image(args.moving_path, args.image_size, normalize=False)
 
     input_tensor = np.concatenate([moving, fixed, original_moving], axis=0)  # shape: (3, D, H, W)
     input_tensor = np.expand_dims(input_tensor, axis=0).astype(np.float32)  # shape: (1, 3, D, H, W)
@@ -78,7 +117,12 @@ def val_onnx(args):
     ort_inputs = {"input": input_tensor}
     moved_np, ddf_np = ort_session.run(None, ort_inputs)  # shapes: (1, 1, D, H, W), (1, 3, D, H, W)
 
+    ddf_array = ddf_np[0]  # shape: (C, Z, Y, X)
+    ref_image = sitk.ReadImage(args.fixed_path)
+    save_ddf(ddf_array, os.path.join(args.result_path, 'ddf_field2.mhd'), fixed_image, reference=ref_image)
+
     print(f"Moved output shape: {moved_np.shape}, DDF shape: {ddf_np.shape}")
+    print(f"  [DDF] max={np.max(ddf_np):.4f}, min={np.min(ddf_np):.4f}, abs_mean={np.mean(ddf_np):.4f}")
 
     # print("Visualizing results...")
     # from utils.visualization_numpy import visualize_one_case
