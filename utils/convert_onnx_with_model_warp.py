@@ -31,6 +31,7 @@ def export_to_onnx(model, input_shapes, save_path="model.onnx", device="cuda"):
 
     torch_out = model(dummy_input)
 
+    print(f"Output shape: {torch_out.shape}")
     print(torch_out[0].shape)
 
     torch.onnx.export(
@@ -71,7 +72,7 @@ def main():
     warnings.filterwarnings("ignore")
 
     args = parse_args()
-    device = args.device
+    device = 'cpu'
 
     model = get_net(args).to(device)
     model_dir = os.path.join("../models", "nlst", args.arch)

@@ -4,21 +4,32 @@ import numpy as np
 import onnx
 import onnxruntime
 import torch
+from torch import nn
 
 from parse_args import parse_args, get_net
 from utils import to_numpy, load_best_model
 
 
+class Model(nn.Module):
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+
+    def forward(self, inputs):
+        ddf = self.model(inputs)
+        return ddf
+
+
 def export_to_onnx(model, input_shape, save_path="model.onnx", device="cuda"):
     model.eval()
     dummy_input = torch.randn(*input_shape).to(device)
-
-    with torch.no_grad():
-        torch_output = model(dummy_input)
-        if isinstance(torch_output, (list, tuple)):
-            torch_output = torch_output[0]
-        elif isinstance(torch_output, dict):
-            torch_output = next(iter(torch_output.values()))
+    torch_output = model(dummy_input)
+    # with torch.no_grad():
+    #     torch_output = model(dummy_input)
+    #     if isinstance(torch_output, (list, tuple)):
+    #         torch_output = torch_output[0]
+    #     elif isinstance(torch_output, dict):
+    #         torch_output = next(iter(torch_output.values()))
 
     print(f"Output shape: {torch_output.shape}")
 
@@ -33,7 +44,7 @@ def export_to_onnx(model, input_shape, save_path="model.onnx", device="cuda"):
         output_names=["output"],
         export_params=True,
         opset_version=20,
-        dynamic_axes=None,  # 医学影像尺寸固定
+        # dynamic_axes=None,  # 医学影像尺寸固定
         verbose=False,
     )
 
@@ -60,16 +71,18 @@ def export_to_onnx(model, input_shape, save_path="model.onnx", device="cuda"):
 def main():
     warnings.filterwarnings("ignore")
     args = parse_args()
-    device = args.device
+    device = 'cpu'
 
     model = get_net(args).to(device)
     model_dir = os.path.join("../models", "nlst", args.arch)
     model = load_best_model(model, model_dir)
 
+    model_ddf = Model(model).to(device)
+
     input_shape = (1, 2, 192, 192, 192)
     save_path = os.path.join("../results", args.arch.replace("/", "_"), "model.onnx")
 
-    export_to_onnx(model, input_shape, save_path, device)
+    export_to_onnx(model_ddf, input_shape, save_path, device)
 
 
 if __name__ == "__main__":

@@ -79,21 +79,14 @@ def resample_vector_field(ddf_image: sitk.Image, reference_image: sitk.Image) ->
 
 
 def save_ddf(array, file_path, origin_image, reference: sitk.Image):
-    arr = np.asarray(array)
+    arr = np.asarray(array).astype(np.float32, copy=False)
     print(f"  [DDF] max={np.max(arr):.4f}, min={np.min(arr):.4f}, abs_mean={np.mean(arr):.4f}")
     # 支持 (3, D, H, W) 或 (D, H, W, 3)
     if arr.ndim == 4 and arr.shape[0] == 3:
         arr = np.moveaxis(arr, 0, -1)
-        # arr = arr.transpose(2, 1, 0, 3)
         print(f"  [DDF] shape={arr.shape}")
     elif arr.ndim != 4 or arr.shape[-1] != 3:
         raise ValueError(f"Unsupported DDF array shape {arr.shape}. Expect (3,D,H,W) or (D,H,W,3).")
-
-    arr = arr.astype(np.float32, copy=False)
-    # sx, sy, sz = origin_image.GetSpacing()
-    # arr[..., 0] /= sx
-    # arr[..., 1] /= sy
-    # arr[..., 2] /= sz
 
     sitk_image = sitk.GetImageFromArray(arr, isVector=True)
     sitk_image.SetSpacing(origin_image.GetSpacing())
@@ -104,10 +97,7 @@ def save_ddf(array, file_path, origin_image, reference: sitk.Image):
 
     if list(sitk_image.GetSize()) != list(reference.GetSize()):
         print(f"  [DDF] Resampling from {sitk_image.GetSize()} → {reference.GetSize()}")
-        sitk_image = resample_vector_field(sitk_image, reference)
-    # print(f"[DDF] sitk_image={sitk_image.GetSize()}, reference={reference.GetSize()} ")
-    # print(f"[DDF] sitk_image={sitk_image.GetSpacing()}, reference={reference.GetSpacing()} ")
-    # print(f"[DDF] sitk_image={sitk_image.GetOrigin()}, reference={reference.GetOrigin()} ")
+        # sitk_image = resample_vector_field(sitk_image, reference)
 
     # sitk_image.CopyInformation(reference)
     sitk_image = sitk.Cast(sitk_image, sitk.sitkVectorFloat32)
@@ -129,6 +119,9 @@ def val_onnx(args):
     fixed, fixed_image = load_image(args.fixed_path, args.image_size)
     moving, moving_image = load_image(args.moving_path, args.image_size)
 
+    print("  [Fixed],", np.mean(fixed))
+    print("  [Moving],", np.mean(moving))
+
     input_tensor = np.concatenate([moving, fixed], axis=0)  # (2, D, H, W)
     input_tensor = np.expand_dims(input_tensor, axis=0).astype(np.float32)  # (1, 2, D, H, W)
     print(f"  Input tensor shape: {input_tensor.shape}")
@@ -140,7 +133,6 @@ def val_onnx(args):
     ort_inputs = {"input": input_tensor}
     [ddf_np] = ort_session.run(None, ort_inputs)
     print(f"  ddf_np shape: {ddf_np.shape}")
-
 
     print("[Step 4] 保存结果...")
     pred_array = ddf_np[0]  # shape: (C, Z, Y, X)

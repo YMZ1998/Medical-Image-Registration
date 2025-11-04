@@ -23,7 +23,7 @@ def predict_single_onnx():
 
     args = parse_args()
     spatial_size = [-1, -1, -1] if args.full_res_training else args.image_size
-    device = args.device
+    device = 'cpu'
 
     # Load image
     test_files = get_test_files(os.path.join(args.data_path, "NLST"))
