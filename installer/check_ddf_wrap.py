@@ -117,7 +117,7 @@ def main():
 
     check_data = {"fixed_image": fixed_image, "moving_image": moving_image}
     print("Visualizing warped result...")
-    visualize_one_case(check_data, moved_tensor, 2)
+    visualize_one_case(check_data, moved_tensor, 0)
 
     moved_image = torch_to_sitk(moved_tensor, fixed_image)
     os.makedirs(os.path.dirname(output_path), exist_ok=True)

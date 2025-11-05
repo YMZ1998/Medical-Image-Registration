@@ -94,9 +94,9 @@ def save_ddf(array, file_path, origin_image, reference: sitk.Image):
 
     # 分别乘以 spacing 的三个分量
     ddf_phys = np.zeros_like(arr)
-    ddf_phys[..., 0] = arr[..., 0] * spacing[0]* spacing[0]
-    ddf_phys[..., 1] = arr[..., 1] * spacing[1]* spacing[1]
-    ddf_phys[..., 2] = arr[..., 2] * spacing[2]* spacing[2]
+    ddf_phys[..., 0] = arr[..., 0] * spacing[0]
+    ddf_phys[..., 1] = arr[..., 1] * spacing[1]
+    ddf_phys[..., 2] = arr[..., 2] * spacing[2]
 
     sitk_image = sitk.GetImageFromArray(ddf_phys, isVector=True)
     sitk_image.SetSpacing(origin_image.GetSpacing())
