@@ -100,8 +100,8 @@ def main():
     fixed_image = sitk.ReadImage(fixed_image_path, sitk.sitkFloat32)
     moving_image = sitk.ReadImage(moving_image_path, sitk.sitkFloat32)
 
-    fixed_image = resample_image(fixed_image, (192, 192, 192))
-    moving_image = resample_image(moving_image, (192, 192, 192))
+    # fixed_image = resample_image(fixed_image, (192, 192, 192))
+    # moving_image = resample_image(moving_image, (192, 192, 192))
 
     ddf_field = sitk.ReadImage(ddf_path, sitk.sitkVectorFloat64)
     ddf_arr = sitk.GetArrayFromImage(ddf_field).astype(np.float32)
@@ -109,6 +109,7 @@ def main():
 
     moving_tensor = sitk_to_torch(moving_image, device)
     ddf_tensor = torch.from_numpy(ddf_arr).permute(3, 0, 1, 2).unsqueeze(0).to(device)
+    print(f"DDF tensor shape: {ddf_tensor.shape}")
 
     warp_layer = Warp(mode="bilinear", padding_mode="border").to(device)
     with torch.no_grad():

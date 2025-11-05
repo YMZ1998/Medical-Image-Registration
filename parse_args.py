@@ -114,7 +114,7 @@ def parse_args():
     args.model_dir = os.path.join(os.getcwd(), "models", "nlst", args.arch)
     os.makedirs(args.model_dir, exist_ok=True)
 
-    # args.device = get_device()
+    args.device = "cuda"
 
     print(args)
 

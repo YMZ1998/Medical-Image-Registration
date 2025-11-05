@@ -88,7 +88,17 @@ def save_ddf(array, file_path, origin_image, reference: sitk.Image):
     elif arr.ndim != 4 or arr.shape[-1] != 3:
         raise ValueError(f"Unsupported DDF array shape {arr.shape}. Expect (3,D,H,W) or (D,H,W,3).")
 
-    sitk_image = sitk.GetImageFromArray(arr, isVector=True)
+    arr = arr[..., [2, 1, 0]]
+    spacing = np.array(reference.GetSpacing())  # (sx, sy, sz)
+    print(f" spacing: {spacing}")
+
+    # 分别乘以 spacing 的三个分量
+    ddf_phys = np.zeros_like(arr)
+    ddf_phys[..., 0] = arr[..., 0] * spacing[0]* spacing[0]
+    ddf_phys[..., 1] = arr[..., 1] * spacing[1]* spacing[1]
+    ddf_phys[..., 2] = arr[..., 2] * spacing[2]* spacing[2]
+
+    sitk_image = sitk.GetImageFromArray(ddf_phys, isVector=True)
     sitk_image.SetSpacing(origin_image.GetSpacing())
     sitk_image.SetOrigin(origin_image.GetOrigin())
     sitk_image.SetDirection(origin_image.GetDirection())
@@ -97,7 +107,7 @@ def save_ddf(array, file_path, origin_image, reference: sitk.Image):
 
     if list(sitk_image.GetSize()) != list(reference.GetSize()):
         print(f"  [DDF] Resampling from {sitk_image.GetSize()} → {reference.GetSize()}")
-        # sitk_image = resample_vector_field(sitk_image, reference)
+        sitk_image = resample_vector_field(sitk_image, reference)
 
     # sitk_image.CopyInformation(reference)
     sitk_image = sitk.Cast(sitk_image, sitk.sitkVectorFloat32)
