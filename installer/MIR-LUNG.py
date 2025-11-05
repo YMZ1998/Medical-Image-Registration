@@ -71,10 +71,19 @@ def resample_vector_field(ddf_image: sitk.Image, reference_image: sitk.Image) ->
     resampler.SetInterpolator(sitk.sitkLinear)
     resampler.SetDefaultPixelValue(0.0)
     resampled = resampler.Execute(ddf_image)
-    # arr = sitk.GetArrayFromImage(resampled)
-    # arr = arr * ratio[::-1]  # SimpleITK array 顺序为 z,y,x
-    # resampled = sitk.GetImageFromArray(arr, isVector=True)
-    # resampled.CopyInformation(reference_image)
+
+    # transfer monai to simpleitk
+    arr = sitk.GetArrayFromImage(resampled)
+    arr = arr[..., ::-1]
+    spacing = np.array(resampled.GetSpacing())  # (sx, sy, sz)
+    print(f" spacing: {spacing}")
+
+    # 分别乘以 spacing 的三个分量
+    arr[..., 0] = arr[..., 0] * spacing[0]
+    arr[..., 1] = arr[..., 1] * spacing[1]
+    arr[..., 2] = arr[..., 2] * spacing[2]
+    resampled = sitk.GetImageFromArray(arr, isVector=True)
+    resampled.CopyInformation(reference_image)
     return resampled
 
 
@@ -88,17 +97,17 @@ def save_ddf(array, file_path, origin_image, reference: sitk.Image):
     elif arr.ndim != 4 or arr.shape[-1] != 3:
         raise ValueError(f"Unsupported DDF array shape {arr.shape}. Expect (3,D,H,W) or (D,H,W,3).")
 
-    arr = arr[..., [2, 1, 0]]
-    spacing = np.array(reference.GetSpacing())  # (sx, sy, sz)
-    print(f" spacing: {spacing}")
+    # arr = arr[..., ::-1]
+    # spacing = np.array(reference.GetSpacing())  # (sx, sy, sz)
+    # print(f" spacing: {spacing}")
+    #
+    # # 分别乘以 spacing 的三个分量
+    # ddf_phys = np.zeros_like(arr)
+    # ddf_phys[..., 0] = arr[..., 0] * spacing[0]
+    # ddf_phys[..., 1] = arr[..., 1] * spacing[1]
+    # ddf_phys[..., 2] = arr[..., 2] * spacing[2]
 
-    # 分别乘以 spacing 的三个分量
-    ddf_phys = np.zeros_like(arr)
-    ddf_phys[..., 0] = arr[..., 0] * spacing[0]
-    ddf_phys[..., 1] = arr[..., 1] * spacing[1]
-    ddf_phys[..., 2] = arr[..., 2] * spacing[2]
-
-    sitk_image = sitk.GetImageFromArray(ddf_phys, isVector=True)
+    sitk_image = sitk.GetImageFromArray(arr, isVector=True)
     sitk_image.SetSpacing(origin_image.GetSpacing())
     sitk_image.SetOrigin(origin_image.GetOrigin())
     sitk_image.SetDirection(origin_image.GetDirection())

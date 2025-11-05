@@ -73,7 +73,8 @@ def visualize_one_case(check_data, pred_image, axis=0):
 
     # === 选取切片索引 ===
     num_slices = fixed_image.shape[axis]
-    slice_indices = range(num_slices // 4, num_slices * 3 // 4, 10)
+    # slice_indices = range(num_slices // 4, num_slices * 3 // 4, 10)
+    slice_indices =[50, 60, 70, 80, 100]
 
     for slice_idx in slice_indices:
         fig, axs = plt.subplots(1, 4, figsize=(16, 5))
@@ -118,6 +119,8 @@ def main():
     check_data = {"fixed_image": fixed_image, "moving_image": moving_image}
     print("Visualizing warped result...")
     visualize_one_case(check_data, moved_tensor, 0)
+    visualize_one_case(check_data, moved_tensor, 1)
+    visualize_one_case(check_data, moved_tensor, 2)
 
     moved_image = torch_to_sitk(moved_tensor, fixed_image)
     os.makedirs(os.path.dirname(output_path), exist_ok=True)

@@ -1,8 +1,7 @@
-import itk
+import SimpleITK as sitk
 import monai
 import numpy as np
 import torch
-import SimpleITK as sitk
 from matplotlib import pyplot as plt
 
 # 读取图像
@@ -33,11 +32,20 @@ monai_warped_img = np.asarray(monai_warped_img.squeeze(0))
 # ---- 使用 SimpleITK 进行变形 ----
 # Convert to SimpleITK format
 sitk_img = sitk.GetImageFromArray(img.astype(np.float32))
-sitk_img.SetSpacing((1.0, 1.0, 1.0))  # Set spacing to 1 (adjust as necessary)
+spacing=(1.0, 2.0, 2.0)
+sitk_img.SetSpacing(spacing)  # Set spacing to 1 (adjust as necessary)
 
 # Create displacement field for SimpleITK
 # Correctly transpose ddf to (D, H, W, 3) for displacement field
-sitk_ddf = sitk.GetImageFromArray(ddf.transpose(1, 2, 3, 0).astype(np.float64))  # (D, H, W, 3)
+ddf = ddf.transpose(1, 2, 3, 0).astype(np.float64)
+ddf = ddf[..., ::-1]
+
+ddf[..., 0] = ddf[..., 0] * spacing[0]
+ddf[..., 1] = ddf[..., 1] * spacing[1]
+ddf[..., 2] = ddf[..., 2] * spacing[2]
+
+print("ddf shape:", ddf.shape)
+sitk_ddf = sitk.GetImageFromArray(ddf)  # (D, H, W, 3)
 sitk_ddf.SetSpacing(sitk_img.GetSpacing())  # Keep the spacing same as original image
 
 # Set up SimpleITK warp filter
