@@ -1,3 +1,5 @@
+import os
+
 from totalsegmentator.python_api import totalsegmentator
 
 from utils.dir_process import remove_and_create_dir
@@ -13,14 +15,16 @@ if __name__ == "__main__":
     # input_path = r"D:\\debug\\test.nii.gz"
     # input_path = r"C:\Users\Admin\Desktop\17-2320_JIANGTAO"
     input_path = r"D:\debug\LUNG1-226\IMAGES\CT"
+    input_path2 = r"D:\debug\LUNG1-226\IMAGES\CT.nii.gz"
     output_path = r"D:\\debug\\segmentations"
     remove_and_create_dir(output_path)
+    output_filename = r"D:\debug\LUNG1-226\IMAGES\seg.nii.gz"
 
     # option 1: provide input and output as file paths
-    totalsegmentator(input_path, input_path, output_type="dicom", task="total",
-                     device="gpu")
-    # totalsegmentator(input_path, output_path, output_type="nifti",
+    # totalsegmentator(input_path, input_path, output_type="dicom", task="total",
     #                  device="gpu")
+    totalsegmentator(input_path2, output_filename, output_type="nifti", ml=True, preview=False,
+                     device="gpu")
     # option 2: provide input and output as nifti image objects
     # input_img = nib.load(input_path)
     # nib.save(input_img, output_path)
