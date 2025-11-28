@@ -1,13 +1,6 @@
-import os
-
-import torch
-import nibabel as nib
 from totalsegmentator.python_api import totalsegmentator
-from totalsegmentator.config import setup_totalseg
 
 from utils.dir_process import remove_and_create_dir
-
-setup_totalseg()  # 仅执行一次，服务器启动时初始化
 
 # print(torch.cuda.is_available())
 # print(torch.cuda.get_device_name(0))
@@ -24,7 +17,7 @@ if __name__ == "__main__":
     remove_and_create_dir(output_path)
 
     # option 1: provide input and output as file paths
-    totalsegmentator(input_path, input_path, output_type="dicom",
+    totalsegmentator(input_path, input_path, output_type="dicom", task="total",
                      device="gpu")
     # totalsegmentator(input_path, output_path, output_type="nifti",
     #                  device="gpu")
